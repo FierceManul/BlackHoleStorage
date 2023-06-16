@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "blackholestorage:block/control_panel",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "blackholestorage:block/control_panel"
+    },
+    "facing=west": {
+      "model": "blackholestorage:block/control_panel",
+      "y": 90
+    },
+    "facing=east": {
+      "model": "blackholestorage:block/control_panel",
+      "y": 270
+    }
+  }
+}

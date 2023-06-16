@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "blackholestorage:block/passive_port"
+    }
+  }
+}

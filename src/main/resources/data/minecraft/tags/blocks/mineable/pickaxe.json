@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "blackholestorage:passive_port",
+    "blackholestorage:active_port",
+    "blackholestorage:control_panel"
+  ]
+}

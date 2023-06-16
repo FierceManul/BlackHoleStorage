@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "blackholestorage:block/active_port"
+    }
+  }
+}

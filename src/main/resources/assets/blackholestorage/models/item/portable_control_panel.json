@@ -1,0 +1,22 @@
+{
+	"parent": "minecraft:item/generated",
+	"textures": {
+		"layer0": "blackholestorage:item/control_panel"
+	},
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [36, 132, 0],
+			"translation": [0, 2, 1.25],
+			"scale": [0.375, 0.375, 0.375]
+		},
+		"firstperson_righthand": {
+			"rotation": [-4.48, -18.6, -1.87],
+			"translation": [-3.25, 3, 0],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, 135, 0],
+			"scale": [0.4, 0.4, 0.4]
+		}
+	}
+}
