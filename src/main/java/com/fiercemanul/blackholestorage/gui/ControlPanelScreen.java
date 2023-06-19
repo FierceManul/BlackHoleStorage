@@ -25,16 +25,15 @@ import java.util.UUID;
 @OnlyIn(Dist.CLIENT)
 public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu> {
 
-    public static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID,"textures/gui/control_panel.png");
+    public static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/control_panel.png");
     public int imageWidth = 202;
     public int imageHeight = 249;
-    private boolean craftingMode = false;
-    private UUID owner;
 
     public ControlPanelScreen(ControlPanelMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
     }
 
+    @Override
     protected void init() {
         super.init();
         this.leftPos = (this.width - imageWidth + 4) / 2;
@@ -43,6 +42,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.addRenderableWidget(new ToggleLockButton(this.leftPos + 177, this.topPos + 210));
     }
 
+    @Override
     public void containerTick() {
         super.containerTick();
     }
@@ -56,9 +56,6 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     @Override
     protected void renderBg(PoseStack stack, float partialTick, int mouseX, int mouseY) {
-
-        this.craftingMode = this.menu.craftingMode;
-        this.owner = this.menu.owner;
 
         RenderSystem.setShaderTexture(0, GUI_IMG);
         this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 6);
@@ -113,6 +110,11 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         super.renderTooltip(pPoseStack, pTooltips, pMouseX, pMouseY);
     }
 
+    private void toggleLock() {
+        this.menu.locked = !this.menu.locked;
+        this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+    }
+
     private void toggleCraftingMode() {
         this.menu.craftingMode = !this.menu.craftingMode;
         this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 1);
@@ -122,7 +124,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
         public ToggleCraftingButton(int pX, int pY) {
             super(pX, pY, 16, 8, 80, 199, GUI_IMG, pButton -> {
-                toggleCraftingMode();
+                ControlPanelScreen.this.toggleCraftingMode();
             });
         }
 
@@ -135,11 +137,11 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             if (this.isHoveredOrFocused()) {
                 vOffset += 8;
             }
-            if (craftingMode) {
+            if (ControlPanelScreen.this.menu.craftingMode) {
                 uOffset += 16;
             }
             RenderSystem.enableDepthTest();
-            blit(pPoseStack, this.x, this.y, (float)uOffset, (float)vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) {
                 this.renderToolTip(pPoseStack, pMouseX, pMouseY);
             }
@@ -150,15 +152,44 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
         public ToggleLockButton(int pX, int pY) {
             super(pX, pY, 19, 16, 67, 215, GUI_IMG, pButton -> {
+                ControlPanelScreen.this.toggleLock();
             });
+        }
+
+        @Override
+        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GUI_IMG);
+            int uOffset = 67;
+            int vOffset = 215;
+            if (this.isHoveredOrFocused()) {
+                vOffset += 16;
+            }
+            if (ControlPanelScreen.this.menu.locked) {
+                uOffset += 19;
+            }
+            RenderSystem.enableDepthTest();
+            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+            if (this.isHovered) {
+                this.renderToolTip(pPoseStack, pMouseX, pMouseY);
+            }
         }
 
         @Override
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
-            list.add(Component.translatable("bhs.GUI.owner", "test").getVisualOrderText());
-            list.add(Component.literal(owner.toString()).getVisualOrderText());
-            //TODO: 用UUID获取玩家名字
+            UUID owner = ControlPanelScreen.this.menu.owner;
+            UUID user = ControlPanelScreen.this.menu.player.getUUID();
+            if (owner.equals(user)) {
+                list.add(Component.translatable("bhs.GUI.owner", "搂a" + ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
+            } else if (ControlPanelScreen.this.menu.locked) {
+                list.add(Component.translatable("bhs.GUI.owner", "搂c" + ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
+            } else {
+                list.add(Component.translatable("bhs.GUI.owner", ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
+            }
+            list.add(Component.literal(ControlPanelScreen.this.menu.owner.toString()).getVisualOrderText());
+            list.add(Component.literal(ControlPanelScreen.this.menu.player.getUUID().toString()).getVisualOrderText());
+            //TODO: ~~~
             ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }

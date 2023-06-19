@@ -1,0 +1,5 @@
+{
+    "screen.bhs.control_panel": "",
+    "bhs.GUI.owner": "Owner: %d",
+    "bhs.GUI.owner.private": "Owner: §c%d"
+}

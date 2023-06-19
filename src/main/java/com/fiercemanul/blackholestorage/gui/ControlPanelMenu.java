@@ -2,8 +2,8 @@ package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
+import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -15,7 +15,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.StackedContents;
-import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
@@ -37,12 +36,12 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     private final ResultContainer resultSlots = new ResultContainer();
     private final SimpleContainer fakeContainer = new SimpleContainer(100);
     private ContainerLevelAccess access;
-    private Player player;
+    protected Player player;
     private Level level;
     public ControlPanelBlockEntity controlPanelBlock;
-    public boolean craftingMode = true;
+    public boolean craftingMode = false;
     public UUID owner;
-    public String ownerName;
+    public String ownerNameCache;
     public boolean locked = false;
 
 
@@ -136,16 +135,22 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (!level.isClientSide) {
             //TODO: 这里也要防null
             this.craftingMode = controlPanelBlock.getCraftingMode();
+            this.locked = controlPanelBlock.isLocked();
             if (controlPanelBlock.getOwner() == null) {
                 this.owner = player.getUUID();
+                this.ownerNameCache = player.getGameProfile().getName();
                 controlPanelBlock.setOwner(owner);
+                controlPanelBlock.setOwnerNameCache(ownerNameCache);
             } else {
                 this.owner = controlPanelBlock.getOwner();
+                controlPanelBlock.updateOwnerName();
+                this.ownerNameCache = controlPanelBlock.getOwnerNameCache();
             }
-            //this.ownerName = Minecraft.;
             CompoundTag tag = new CompoundTag();
             tag.putBoolean("craftingMode", this.craftingMode);
             tag.putUUID("owner", this.owner);
+            tag.putString("ownerNameCache", this.ownerNameCache);
+            tag.putBoolean("locked", this.locked);
             ItemStack itemStack = new ItemStack(PORTABLE_CONTROL_PANEL_ITEM.get(), 1, tag);
             itemStack.setTag(tag);
             slots.get(150).set(itemStack);
@@ -161,6 +166,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             CompoundTag tag = slots.get(150).getItem().getTag();
             this.craftingMode = tag.getBoolean("craftingMode");
             this.owner = tag.getUUID("owner");
+            this.ownerNameCache = tag.getString("ownerNameCache");
+            this.locked = tag.getBoolean("locked");
         }
     }
 
@@ -249,7 +256,10 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.access.execute((level, pos) -> {
             clearCraftSlots();
         });
-        controlPanelBlock.setCraftingMode(craftingMode);
+        controlPanelBlock.setLocked(locked);
+        if (!locked) {
+            controlPanelBlock.setCraftingMode(craftingMode);
+        }
     }
 
 
@@ -260,7 +270,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     @Override
     public boolean clickMenuButton(Player pPlayer, int pId) {
         switch (pId) {
-            case 0 : LogUtils.getLogger().warn("aaw");
+            case 0 : locked = !locked;
             case 1 : craftingMode = !craftingMode;
         }
         return pId < 2;

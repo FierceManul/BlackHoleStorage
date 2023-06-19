@@ -110,6 +110,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
             //TODO: 可能会null
             ControlPanelBlockEntity panelBlock = (ControlPanelBlockEntity) pLevel.getBlockEntity(pPos);
             panelBlock.setOwner(pPlacer.getUUID());
+            panelBlock.setOwnerNameCache(pPlacer.getName().getString());
         }
     }
 

@@ -5,6 +5,7 @@ import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
 import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
 import com.fiercemanul.blackholestorage.model.BlackHoleModelLoader;
+import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -35,6 +36,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
+import java.util.UUID;
+
 @Mod(BlackHoleStorage.MODID)
 public class BlackHoleStorage {
 
@@ -44,6 +47,7 @@ public class BlackHoleStorage {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<MenuType<?>> MENU_TYPE = DeferredRegister.create(ForgeRegistries.MENU_TYPES, MODID);
+    public static final GameProfile FAKE_PROFILE = new GameProfile(new UUID(-4684872810181343842L, -8974665844362031049L), "public");
 
 
     public static final RegistryObject<Block> PASSIVE_PORT = BLOCKS.register(
