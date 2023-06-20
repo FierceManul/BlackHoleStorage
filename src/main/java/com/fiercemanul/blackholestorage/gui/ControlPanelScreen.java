@@ -183,13 +183,13 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             if (owner.equals(user)) {
                 list.add(Component.translatable("bhs.GUI.owner", "§a" + ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
             } else if (ControlPanelScreen.this.menu.locked) {
-                list.add(Component.translatable("bhs.GUI.owner", "§c" + ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
+                list.add(Component.translatable("bhs.GUI.owner", "§c" + ControlPanelScreen.this.menu.ownerNameCache).getVisualOrderText());
             } else {
-                list.add(Component.translatable("bhs.GUI.owner", ControlPanelScreen.this.menu.player.getGameProfile().getName()).getVisualOrderText());
+                list.add(Component.translatable("bhs.GUI.owner", ControlPanelScreen.this.menu.ownerNameCache).getVisualOrderText());
             }
+            //TODO: 测试用，以后移除
             list.add(Component.literal(ControlPanelScreen.this.menu.owner.toString()).getVisualOrderText());
             list.add(Component.literal(ControlPanelScreen.this.menu.player.getUUID().toString()).getVisualOrderText());
-            //TODO: ~~~
             ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }

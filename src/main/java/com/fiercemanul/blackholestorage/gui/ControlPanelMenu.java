@@ -270,8 +270,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     @Override
     public boolean clickMenuButton(Player pPlayer, int pId) {
         switch (pId) {
-            case 0 : locked = !locked;
-            case 1 : craftingMode = !craftingMode;
+            //TODO: lock需要检查uuid，测试暂时不做
+            case 0 -> locked = !locked;
+            case 1 -> craftingMode = !craftingMode;
         }
         return pId < 2;
     }
