@@ -2,8 +2,7 @@ package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import com.mojang.authlib.GameProfile;
-import com.mojang.logging.LogUtils;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -23,21 +22,22 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.fiercemanul.blackholestorage.BlackHoleStorage.CONTROL_PANEL_MENU;
-import static com.fiercemanul.blackholestorage.BlackHoleStorage.PORTABLE_CONTROL_PANEL_ITEM;
 
 public class ControlPanelMenu extends AbstractContainerMenu {
 
     private final CraftingContainer craftSlots = new CraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
-    private final SimpleContainer fakeContainer = new SimpleContainer(100);
+    private final SimpleContainer fakeContainer = new SimpleContainer(99);
     private ContainerLevelAccess access;
     protected Player player;
     private Level level;
+    @Nullable
     public ControlPanelBlockEntity controlPanelBlock;
     public boolean craftingMode = false;
     public UUID owner;
@@ -58,17 +58,40 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     //客户端调用这个
     public ControlPanelMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
-        this(containerId, playerInv, playerInv.player, playerInv.player.level, extraData.readBlockPos());
+        super(CONTROL_PANEL_MENU.get(), containerId);
+        this.level = playerInv.player.level;
+        this.access = ContainerLevelAccess.create(playerInv.player.level, extraData.readBlockPos());
+        this.player = playerInv.player;
+        //客户端getBlockEntity会导致gui呼不出来,但为什么get不get都是null，get了就出问题了呢？
+        //this.controlPanelBlock = (ControlPanelBlockEntity) playerInv.player.level.getBlockEntity(extraData.readBlockPos());
+        this.owner = extraData.readUUID();
+        this.ownerNameCache = extraData.readUtf();
+        this.locked = extraData.readBoolean();
+        this.craftingMode = extraData.readNbt().getBoolean("craftingMode");
+
+        addSlots(playerInv.player, playerInv);
     }
 
     //服务端用这个
-    public ControlPanelMenu(int containerId, Inventory playerInv, Player player, Level level, BlockPos pos) {
+    public ControlPanelMenu(int containerId, Inventory playerInv, Player player, Level level, BlockPos pos, CompoundTag nbt) {
         super(CONTROL_PANEL_MENU.get(), containerId);
         this.level = level;
         this.access = ContainerLevelAccess.create(level, pos);
         this.player = player;
         this.controlPanelBlock = (ControlPanelBlockEntity) level.getBlockEntity(pos);
+        this.owner = nbt.getUUID("owner");
+        this.ownerNameCache = nbt.getString("ownerNameCache");
+        this.locked = nbt.getBoolean("locked");
+        this.craftingMode = nbt.getBoolean("craftingMode");
 
+        addSlots(player, playerInv);
+
+
+
+
+    }
+
+    private void addSlots(Player player, Inventory playerInv) {
         //快捷栏0~8
         for(int l = 0; l < 9; ++l) {
             this.addSlot(new Slot(playerInv, l, 23 + l * 17, 227));
@@ -127,48 +150,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 });
             }
         }
-
-        //数据同步专用150
-        this.addSlot(new Slot(fakeContainer, 99, 6, 159));
-
-        //服务端
-        if (!level.isClientSide) {
-            //TODO: 这里也要防null
-            this.craftingMode = controlPanelBlock.getCraftingMode();
-            this.locked = controlPanelBlock.isLocked();
-            if (controlPanelBlock.getOwner() == null) {
-                this.owner = player.getUUID();
-                this.ownerNameCache = player.getGameProfile().getName();
-                controlPanelBlock.setOwner(owner);
-                controlPanelBlock.setOwnerNameCache(ownerNameCache);
-            } else {
-                this.owner = controlPanelBlock.getOwner();
-                controlPanelBlock.updateOwnerName();
-                this.ownerNameCache = controlPanelBlock.getOwnerNameCache();
-            }
-            CompoundTag tag = new CompoundTag();
-            tag.putBoolean("craftingMode", this.craftingMode);
-            tag.putUUID("owner", this.owner);
-            tag.putString("ownerNameCache", this.ownerNameCache);
-            tag.putBoolean("locked", this.locked);
-            ItemStack itemStack = new ItemStack(PORTABLE_CONTROL_PANEL_ITEM.get(), 1, tag);
-            itemStack.setTag(tag);
-            slots.get(150).set(itemStack);
-        }
-
     }
 
     @Override
     public void initializeContents(int pStateId, List<ItemStack> pItems, ItemStack pCarried) {
         super.initializeContents(pStateId, pItems, pCarried);
-        if (level.isClientSide) {
-            //TODO: 空值预防
-            CompoundTag tag = slots.get(150).getItem().getTag();
-            this.craftingMode = tag.getBoolean("craftingMode");
-            this.owner = tag.getUUID("owner");
-            this.ownerNameCache = tag.getString("ownerNameCache");
-            this.locked = tag.getBoolean("locked");
-        }
     }
 
     @Override
@@ -252,6 +238,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public void removed(Player player) {
+        if (player instanceof AbstractClientPlayer) return;
         super.removed(player);
         this.access.execute((level, pos) -> {
             clearCraftSlots();

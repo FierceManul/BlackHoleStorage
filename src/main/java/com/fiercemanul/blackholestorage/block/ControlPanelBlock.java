@@ -3,6 +3,8 @@ package com.fiercemanul.blackholestorage.block;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+
     public ControlPanelBlock() {
         super(Properties
                 .of(Material.METAL)
@@ -100,7 +103,6 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
     }
 
 
-
     //互交
 
     @Override
@@ -118,13 +120,18 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
     public InteractionResult use(BlockState blockState, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof ControlPanelBlockEntity) {
+            if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
+                CompoundTag serverNbt = new CompoundTag();
+                serverNbt.putUUID("owner", controlPanelBlockEntity.getOwner());
+                serverNbt.putString("ownerNameCache", controlPanelBlockEntity.getOwnerNameCache());
+                serverNbt.putBoolean("locked", controlPanelBlockEntity.isLocked());
+                serverNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
+
                 MenuProvider containerProvider = new MenuProvider() {
 
-                    @Nullable
                     @Override
                     public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-                        return new ControlPanelMenu(containerId, playerInventory, player, level, pos);
+                        return new ControlPanelMenu(containerId, playerInventory, player, level, pos, serverNbt);
                     }
 
                     @Override
@@ -132,12 +139,20 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                         return Component.translatable("screen.bhs.control_panel");
                     }
                 };
-                NetworkHooks.openScreen((ServerPlayer) player, containerProvider, blockEntity.getBlockPos());
+
+                CompoundTag clientNbt = new CompoundTag();
+                clientNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
+                NetworkHooks.openScreen((ServerPlayer) player, containerProvider, buf -> {
+                    buf.writeBlockPos(pos);
+                    buf.writeUUID(controlPanelBlockEntity.getOwner());
+                    buf.writeUtf(controlPanelBlockEntity.getOwnerNameCache(), 128);
+                    buf.writeBoolean(controlPanelBlockEntity.isLocked());
+                    buf.writeNbt(clientNbt);
+                });
             }
         }
         return InteractionResult.SUCCESS;
     }
-
 
 
 }
