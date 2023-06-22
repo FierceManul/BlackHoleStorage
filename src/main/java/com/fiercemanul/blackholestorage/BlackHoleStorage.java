@@ -3,11 +3,15 @@ package com.fiercemanul.blackholestorage;
 import com.fiercemanul.blackholestorage.block.*;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
+import com.fiercemanul.blackholestorage.item.ActivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
-import com.fiercemanul.blackholestorage.model.BlackHoleModelLoader;
+import com.fiercemanul.blackholestorage.render.BlackHoleBlockRender;
+import com.fiercemanul.blackholestorage.render.BlackHoleModel;
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
@@ -18,12 +22,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
-import net.minecraftforge.client.model.generators.BlockModelBuilder;
-import net.minecraftforge.client.model.generators.BlockStateProvider;
-import net.minecraftforge.client.model.generators.CustomLoaderBuilder;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -34,7 +34,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Mod(BlackHoleStorage.MODID)
 public class BlackHoleStorage {
@@ -60,8 +62,8 @@ public class BlackHoleStorage {
     public static final RegistryObject<BlockEntityType<ActivePortBlockEntity>> ACTIVE_PORT_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register(
             "active_port", () -> BlockEntityType.Builder.of(ActivePortBlockEntity::new, ACTIVE_PORT.get()).build(null)
     );
-    public static final RegistryObject<Item> EXAMPLE_BLOCK_ITEM = ITEMS.register(
-            "active_port", () -> new BlockItem(ACTIVE_PORT.get(), new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
+    public static final RegistryObject<Item> ACTIVE_PORT_ITEM = ITEMS.register(
+            "active_port", () -> new ActivePortBlockItem(ACTIVE_PORT.get(), new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
     public static final RegistryObject<Block> CONTROL_PANEL = BLOCKS.register(
             "control_panel", ControlPanelBlock::new);
     public static final RegistryObject<BlockEntityType<ControlPanelBlockEntity>> CONTROL_PANEL_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register(
@@ -103,35 +105,16 @@ public class BlackHoleStorage {
 
         @SubscribeEvent
         public static void registerBlockEntityRenderer(EntityRenderersEvent.RegisterRenderers register) {
-            register.registerBlockEntityRenderer(PASSIVE_PORT_BLOCK_ENTITY.get(), PassivePortBlockEntityRender::new);
-            register.registerBlockEntityRenderer(ACTIVE_PORT_BLOCK_ENTITY.get(), ActivePortBlockEntityRender::new);
+            register.registerBlockEntityRenderer(PASSIVE_PORT_BLOCK_ENTITY.get(), BlackHoleBlockRender::new);
+            register.registerBlockEntityRenderer(ACTIVE_PORT_BLOCK_ENTITY.get(), BlackHoleBlockRender::new);
         }
 
         @SubscribeEvent
-        public static void onRegisterGeometryLoadersEvent(ModelEvent.RegisterGeometryLoaders event) {
-            event.register(new ResourceLocation(MODID, "blackholemodelloader").getPath(), new BlackHoleModelLoader());
-        }
-
-        @SubscribeEvent
-        public static void gatherData(GatherDataEvent event) {
-
-            event.getGenerator().addProvider(event.includeClient(), new BlockStateProvider(event.getGenerator(), MODID, event.getExistingFileHelper()) {
-                @Override
-                protected void registerStatesAndModels() {
-
-                    BlockModelBuilder modelBuilder = models().getBuilder(PASSIVE_PORT.getId().getPath())
-                            //.parent(models().getExistingFile(mcLoc("cube")))
-                            .customLoader((blockModelBuilder, helper) -> new CustomLoaderBuilder<BlockModelBuilder>(
-                                    new ResourceLocation(MODID, "blackholemodelloader"),
-                                    blockModelBuilder,
-                                    helper) {
-                            }).end();
-                    simpleBlockItem(PASSIVE_PORT.get(), modelBuilder);
-
-                    //ItemModelBuilder itemModelBuilder = itemModels().nested();
-                }
-            });
-
+        static void onBakeModel(ModelEvent.BakingCompleted event) {
+            ModelResourceLocation location = new ModelResourceLocation(MODID, "passive_port", "inventory");
+            event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
+            location = new ModelResourceLocation(MODID, "active_port", "inventory");
+            event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
         }
 
         @SubscribeEvent

@@ -8,9 +8,9 @@ import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 import java.util.function.Consumer;
 
-public class PassivePortBlockItem extends BlockItem {
+public class ActivePortBlockItem extends BlockItem {
 
-    public PassivePortBlockItem(Block block, Properties properties) {
+    public ActivePortBlockItem(Block block, Properties properties) {
         super(block, properties);
     }
 
