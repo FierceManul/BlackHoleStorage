@@ -2,41 +2,27 @@ package com.fiercemanul.blackholestorage;
 
 import com.fiercemanul.blackholestorage.block.*;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
-import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
 import com.fiercemanul.blackholestorage.item.ActivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
-import com.fiercemanul.blackholestorage.render.BlackHoleBlockRender;
-import com.fiercemanul.blackholestorage.render.BlackHoleModel;
-import com.mojang.authlib.GameProfile;
+import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
 @Mod(BlackHoleStorage.MODID)
 public class BlackHoleStorage {
@@ -47,7 +33,12 @@ public class BlackHoleStorage {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<MenuType<?>> MENU_TYPE = DeferredRegister.create(ForgeRegistries.MENU_TYPES, MODID);
-    public static final GameProfile FAKE_PROFILE = new GameProfile(new UUID(-4684872810181343842L, -8974665844362031049L), "public");
+    //public static final GameProfile FAKE_PROFILE = new GameProfile(new UUID(-4684872810181343842L, -8974665844362031049L), "public");
+    public static final String FAKE_PLAYER_NAME = "public";
+    /**
+     * befbfd00-2b41-459e-8373-94f6e0f85037
+     */
+    public static final UUID FAKE_PLAYER_UUID = new UUID(-4684872810181343842L, -8974665844362031049L);
 
 
     public static final RegistryObject<Block> PASSIVE_PORT = BLOCKS.register(
@@ -95,36 +86,9 @@ public class BlackHoleStorage {
         MENU_TYPE.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        NetworkHandler.init();
     }
-
-
-
-
-    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents {
-
-        @SubscribeEvent
-        public static void registerBlockEntityRenderer(EntityRenderersEvent.RegisterRenderers register) {
-            register.registerBlockEntityRenderer(PASSIVE_PORT_BLOCK_ENTITY.get(), BlackHoleBlockRender::new);
-            register.registerBlockEntityRenderer(ACTIVE_PORT_BLOCK_ENTITY.get(), BlackHoleBlockRender::new);
-        }
-
-        @SubscribeEvent
-        static void onBakeModel(ModelEvent.BakingCompleted event) {
-            ModelResourceLocation location = new ModelResourceLocation(MODID, "passive_port", "inventory");
-            event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
-            location = new ModelResourceLocation(MODID, "active_port", "inventory");
-            event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
-        }
-
-        @SubscribeEvent
-        public static void clientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> {
-                MenuScreens.register(CONTROL_PANEL_MENU.get(), ControlPanelScreen::new);
-            });
-        }
-    }
-
 }
 
 

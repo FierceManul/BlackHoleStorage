@@ -13,7 +13,6 @@ public class ControlPanelBlockEntity extends BlockEntity {
 
     private boolean craftingMode = false;
     private UUID owner;
-    private String ownerNameCache;
     private boolean locked = false;
 
     public ControlPanelBlockEntity(BlockPos pos, BlockState state) {
@@ -28,7 +27,6 @@ public class ControlPanelBlockEntity extends BlockEntity {
         craftingMode = pTag.getBoolean("craftingMode");
         if (pTag.contains("owner")) {
             owner = pTag.getUUID("owner");
-            ownerNameCache = pTag.getString("ownerNameCache");
             locked = pTag.getBoolean("locked");
         }
     }
@@ -38,30 +36,13 @@ public class ControlPanelBlockEntity extends BlockEntity {
         pTag.putBoolean("craftingMode", craftingMode);
         if (owner != null) {
             pTag.putUUID("owner", owner);
-            pTag.putString("ownerNameCache", ownerNameCache);
             pTag.putBoolean("locked", locked);
-        }
-    }
-
-    public void updateOwnerName() {
-        if (owner != null) {
-            if (level.getServer().getProfileCache().get(owner).isPresent()) {
-                ownerNameCache = level.getServer().getProfileCache().get(owner).get().getName();
-                setChanged();
-            } else if (ownerNameCache == null) {
-                ownerNameCache = "UnknownUser";
-                setChanged();
-            }
         }
     }
 
 
     public UUID getOwner() {
         return owner;
-    }
-
-    public String getOwnerNameCache() {
-        return ownerNameCache;
     }
 
     public boolean isLocked() {
@@ -75,11 +56,6 @@ public class ControlPanelBlockEntity extends BlockEntity {
 
     public void setOwner(UUID owner) {
         this.owner = owner;
-        this.setChanged();
-    }
-
-    public void setOwnerNameCache(String ownerNameCache) {
-        this.ownerNameCache = ownerNameCache;
         this.setChanged();
     }
 

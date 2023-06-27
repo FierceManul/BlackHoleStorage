@@ -33,6 +33,8 @@ import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
@@ -111,7 +113,6 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
             //TODO: 可能会null
             ControlPanelBlockEntity panelBlock = (ControlPanelBlockEntity) pLevel.getBlockEntity(pPos);
             panelBlock.setOwner(pPlacer.getUUID());
-            panelBlock.setOwnerNameCache(pPlacer.getName().getString());
         }
     }
 
@@ -121,8 +122,8 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
                 CompoundTag serverNbt = new CompoundTag();
-                serverNbt.putUUID("owner", controlPanelBlockEntity.getOwner());
-                serverNbt.putString("ownerNameCache", controlPanelBlockEntity.getOwnerNameCache());
+                UUID owner = (controlPanelBlockEntity.getOwner() == null) ? player.getUUID() : controlPanelBlockEntity.getOwner();
+                serverNbt.putUUID("owner", owner);
                 serverNbt.putBoolean("locked", controlPanelBlockEntity.isLocked());
                 serverNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
 
@@ -143,8 +144,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                 clientNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
                 NetworkHooks.openScreen((ServerPlayer) player, containerProvider, buf -> {
                     buf.writeBlockPos(pos);
-                    buf.writeUUID(controlPanelBlockEntity.getOwner());
-                    buf.writeUtf(controlPanelBlockEntity.getOwnerNameCache(), 128);
+                    buf.writeUUID(owner);
                     buf.writeBoolean(controlPanelBlockEntity.isLocked());
                     buf.writeNbt(clientNbt);
                 });

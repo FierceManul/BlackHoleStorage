@@ -2,7 +2,8 @@ package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import net.minecraft.client.player.AbstractClientPlayer;
+import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
+import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -39,10 +40,12 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     private Level level;
     @Nullable
     public ControlPanelBlockEntity controlPanelBlock;
-    public boolean craftingMode = false;
     public UUID owner;
-    public String ownerNameCache;
+    public String ownerName;
     public boolean locked = false;
+    public UUID channelOwner;
+    public String channelOwnerName;
+    public boolean craftingMode = false;
 
 
     public static final String[] SORT_TYPE = new String[]{
@@ -65,9 +68,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         //客户端getBlockEntity会导致gui呼不出来,但为什么get不get都是null，get了就出问题了呢？
         //this.controlPanelBlock = (ControlPanelBlockEntity) playerInv.player.level.getBlockEntity(extraData.readBlockPos());
         this.owner = extraData.readUUID();
-        this.ownerNameCache = extraData.readUtf();
         this.locked = extraData.readBoolean();
         this.craftingMode = extraData.readNbt().getBoolean("craftingMode");
+
+        this.ownerName = ClientChannelManager.getInstance().getUserName(this.owner);
+
 
         addSlots(playerInv.player, playerInv);
     }
@@ -80,26 +85,25 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.player = player;
         this.controlPanelBlock = (ControlPanelBlockEntity) level.getBlockEntity(pos);
         this.owner = nbt.getUUID("owner");
-        this.ownerNameCache = nbt.getString("ownerNameCache");
         this.locked = nbt.getBoolean("locked");
         this.craftingMode = nbt.getBoolean("craftingMode");
 
+        this.ownerName = ServerChannelManager.getInstance().getUserName(this.owner);
+
         addSlots(player, playerInv);
-
-
 
 
     }
 
     private void addSlots(Player player, Inventory playerInv) {
         //快捷栏0~8
-        for(int l = 0; l < 9; ++l) {
+        for (int l = 0; l < 9; ++l) {
             this.addSlot(new Slot(playerInv, l, 23 + l * 17, 227));
         }
 
         //背包9~35
-        for(int k = 0; k < 3; ++k) {
-            for(int i1 = 0; i1 < 9; ++i1) {
+        for (int k = 0; k < 3; ++k) {
+            for (int i1 = 0; i1 < 9; ++i1) {
                 this.addSlot(new Slot(playerInv, i1 + k * 9 + 9, 23 + i1 * 17, 176 + k * 17));
             }
         }
@@ -109,7 +113,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.addSlot(getArmorSlot(player, playerInv, EquipmentSlot.CHEST, 38, 159, 125));
         this.addSlot(getArmorSlot(player, playerInv, EquipmentSlot.LEGS, 37, 159, 142));
         this.addSlot(getArmorSlot(player, playerInv, EquipmentSlot.FEET, 36, 142, 142));
-        this.addSlot(new Slot(playerInv, 40, 159, 159){
+        this.addSlot(new Slot(playerInv, 40, 159, 159) {
             @Override
             public boolean isActive() {
                 return craftingMode;
@@ -117,9 +121,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         });
 
         //合成格41~50
-        for(int i = 0; i < 3; ++i) {
-            for(int j = 0; j < 3; ++j) {
-                this.addSlot(new Slot(this.craftSlots, j + i * 3, 23 + j * 17, 125 + i * 17){
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                this.addSlot(new Slot(this.craftSlots, j + i * 3, 23 + j * 17, 125 + i * 17) {
                     @Override
                     public boolean isActive() {
                         return craftingMode;
@@ -127,7 +131,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 });
             }
         }
-        this.addSlot(new ResultSlot(player, this.craftSlots, this.resultSlots, 0, 74, 142){
+        this.addSlot(new ResultSlot(player, this.craftSlots, this.resultSlots, 0, 74, 142) {
             @Override
             public boolean isActive() {
                 return craftingMode;
@@ -142,7 +146,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 11; j++) {
-                this.addSlot(new Slot(fakeContainer, 77 + i * 11 + j, 6 + j * 17, 125 + i * 17){
+                this.addSlot(new Slot(fakeContainer, 77 + i * 11 + j, 6 + j * 17, 125 + i * 17) {
                     @Override
                     public boolean isActive() {
                         return !craftingMode;
@@ -192,7 +196,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
                 slot.onQuickCraft(itemstack1, itemstack);
 
-            } else if(slotId >= 41 && slotId <= 49) {
+            } else if (slotId >= 41 && slotId <= 49) {
 
                 if (!this.moveItemStackTo(itemstack1, 0, 36, false)) {
                     return ItemStack.EMPTY;
@@ -238,7 +242,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public void removed(Player player) {
-        if (player instanceof AbstractClientPlayer) return;
+        if (level.isClientSide) return;
         super.removed(player);
         this.access.execute((level, pos) -> {
             clearCraftSlots();
@@ -248,8 +252,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             controlPanelBlock.setCraftingMode(craftingMode);
         }
     }
-
-
 
 
     //按钮相关
@@ -265,15 +267,10 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
 
-
-
-
-
-
     //合成相关
     protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftingContainer, ResultContainer resultContainer) {
         if (!level.isClientSide) {
-            ServerPlayer serverplayer = (ServerPlayer)player;
+            ServerPlayer serverplayer = (ServerPlayer) player;
             ItemStack itemstack = ItemStack.EMPTY;
             Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftingContainer, level);
             if (optional.isPresent()) {
@@ -369,13 +366,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     protected void clearCraftSlots() {
-        if (!player.isAlive() || player instanceof ServerPlayer && ((ServerPlayer)player).hasDisconnected()) {
-            for(int j = 0; j < this.craftSlots.getContainerSize(); ++j) {
+        if (!player.isAlive() || player instanceof ServerPlayer && ((ServerPlayer) player).hasDisconnected()) {
+            for (int j = 0; j < this.craftSlots.getContainerSize(); ++j) {
                 player.drop(this.craftSlots.removeItemNoUpdate(j), false);
             }
 
         } else {
-            for(int i = 0; i < this.craftSlots.getContainerSize(); ++i) {
+            for (int i = 0; i < this.craftSlots.getContainerSize(); ++i) {
                 Inventory inventory = player.getInventory();
                 if (inventory.player instanceof ServerPlayer) {
                     inventory.placeItemBackInInventory(this.craftSlots.removeItemNoUpdate(i));
