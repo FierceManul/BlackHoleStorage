@@ -20,5 +20,6 @@ public class NetworkHandler {
 
     public static void init() {
         INSTANCE.registerMessage(1, NameCachePack.class, NameCachePack::makePack, NameCachePack::new, NameCachePack::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(2, ControlPanelMenuActionPack.class, ControlPanelMenuActionPack::makePack, ControlPanelMenuActionPack::new, ControlPanelMenuActionPack::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }

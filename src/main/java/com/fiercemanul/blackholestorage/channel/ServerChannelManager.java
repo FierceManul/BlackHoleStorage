@@ -5,6 +5,7 @@ import com.fiercemanul.blackholestorage.network.NameCachePack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.storage.LevelResource;
@@ -27,27 +28,30 @@ public class ServerChannelManager {
     private static volatile ServerChannelManager instance;
     private CompoundTag userCache;
     private File saveDataPath;
+    private final MinecraftServer server;
 
     public static ServerChannelManager getInstance() {
         if (instance == null) {
             synchronized (ServerChannelManager.class) {
-                if (instance == null) instance = new ServerChannelManager();
+                if (instance == null) {
+                    instance = new ServerChannelManager(ServerLifecycleHooks.getCurrentServer());
+                }
             }
         }
         return instance;
     }
 
-    private static void newInstance() {
+    private static void newInstance(MinecraftServer server) {
         if (instance == null) {
             synchronized (ServerChannelManager.class) {
-                if (instance == null) instance = new ServerChannelManager();
+                if (instance == null) instance = new ServerChannelManager(server);
             }
         }
     }
 
     @SubscribeEvent
     public static void onServerLoad(ServerAboutToStartEvent event) {
-        newInstance();
+        newInstance(event.getServer());
     }
 
     @SubscribeEvent
@@ -68,13 +72,13 @@ public class ServerChannelManager {
         instance = null;
     }
 
-    private ServerChannelManager() {
+    private ServerChannelManager(MinecraftServer server) {
+        this.server = server;
         MinecraftForge.EVENT_BUS.register(this);
         this.load();
     }
 
     private void load() {
-        var server = ServerLifecycleHooks.getCurrentServer();
         this.saveDataPath = new File(server.getWorldPath(LevelResource.ROOT).toFile(), "data/BlackHoleStorage");
         try {
             if(!saveDataPath.exists()) saveDataPath.mkdirs();

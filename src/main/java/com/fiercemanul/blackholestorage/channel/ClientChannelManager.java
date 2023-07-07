@@ -4,6 +4,9 @@ import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.UUID;
@@ -33,7 +36,19 @@ public class ClientChannelManager {
         }
     }
 
+    @SubscribeEvent
+    public static void onLoggingInServer(ClientPlayerNetworkEvent.LoggingIn event) {
+        newInstance();
+    }
+
+    @SubscribeEvent
+    public void onLoggingOutServer(ClientPlayerNetworkEvent.LoggingOut event) {
+        MinecraftForge.EVENT_BUS.unregister(this);
+        instance = null;
+    }
+
     public ClientChannelManager() {
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     public void setUserCache(CompoundTag userCache) {

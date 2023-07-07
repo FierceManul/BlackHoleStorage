@@ -118,7 +118,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
 
     @Override
     public InteractionResult use(BlockState blockState, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide && !player.isSpectator()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
                 CompoundTag serverNbt = new CompoundTag();

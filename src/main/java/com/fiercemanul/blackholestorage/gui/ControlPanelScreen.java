@@ -3,21 +3,28 @@ package com.fiercemanul.blackholestorage.gui;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 
 @OnlyIn(Dist.CLIENT)
@@ -26,6 +33,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     public static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/control_panel.png");
     public int imageWidth = 202;
     public int imageHeight = 249;
+    private Font smallFont;
 
     public ControlPanelScreen(ControlPanelMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -38,6 +46,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.topPos = (this.height - imageHeight) / 2;
         this.addRenderableWidget(new ToggleCraftingButton(this.leftPos + 142, this.topPos + 163));
         this.addRenderableWidget(new ToggleLockButton(this.leftPos + 177, this.topPos + 210));
+        this.smallFont = Minecraft.getInstance().font;
     }
 
     @Override
@@ -49,6 +58,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(poseStack);
         super.render(poseStack, mouseX, mouseY, partialTicks);
+        this.renderDummyCount();
         this.renderTooltip(poseStack, mouseX, mouseY);
     }
 
@@ -100,12 +110,55 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     }
 
+    public void renderDummyCount() {
+        for (int i = 0; i < this.menu.dummyContainer.stringCountTemp.size(); i++) {
+            Slot slot = this.menu.slots.get(i + 51);
+            ItemStack itemStack = slot.getItem();
+            String count = this.menu.dummyContainer.stringCountTemp.get(i);
+
+            this.setBlitOffset(100);
+            RenderSystem.enableDepthTest();
+
+            float fontSize = 0.5F;
+            PoseStack poseStack = new PoseStack();
+            poseStack.translate(leftPos + slot.x, topPos + slot.y, 300.0D);
+            poseStack.scale(fontSize, fontSize, 1.0F);
+            MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+            this.font.drawInBatch(
+                    count,
+                    (16 - this.font.width(count) * fontSize) / fontSize,
+                    (16 - this.font.lineHeight * fontSize) / fontSize,
+                    16777215,
+                    true,
+                    poseStack.last().pose(),
+                    bufferSource,
+                    false,
+                    0,
+                    15728880);
+            bufferSource.endBatch();
+
+            this.setBlitOffset(0);
+        }
+    }
+
     @Override
     protected void renderLabels(PoseStack stack, int i, int j) {
     }
 
+    /**
+     * 加这一步才ToolTip能渲染多行本文，我不知道为什么，反正他就是可以。
+     */
     private void renderToolTip(PoseStack pPoseStack, List<? extends FormattedCharSequence> pTooltips, int pMouseX, int pMouseY) {
         super.renderTooltip(pPoseStack, pTooltips, pMouseX, pMouseY);
+    }
+
+    @Override
+    protected boolean isHovering(int pX, int pY, int pWidth, int pHeight, double pMouseX, double pMouseY) {
+        int i = this.leftPos;
+        int j = this.topPos;
+        pMouseX -= i;
+        pMouseY -= j;
+        return pMouseX >= (double)pX && pMouseX < (double)(pX + pWidth) && pMouseY >= (double)pY && pMouseY < (double)(pY + pHeight);
     }
 
     private void toggleLock() {
@@ -191,5 +244,13 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
+
+    private class SmallFont extends Font {
+        public final int lineHeight = 5;
+        public SmallFont(Function<ResourceLocation, FontSet> pFonts, boolean pFilterFishyGlyphs) {
+            super(pFonts, pFilterFishyGlyphs);
+        }
+    }
+
 
 }
