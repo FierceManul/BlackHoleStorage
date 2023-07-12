@@ -10,6 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
@@ -19,16 +20,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
-import java.io.*;
+import java.io.File;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = BlackHoleStorage.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ServerChannelManager {
 
     private static volatile ServerChannelManager instance;
-    private CompoundTag userCache;
-    private File saveDataPath;
-    private final MinecraftServer server;
 
     public static ServerChannelManager getInstance() {
         if (instance == null) {
@@ -54,10 +52,28 @@ public class ServerChannelManager {
         newInstance(event.getServer());
     }
 
+
+
+
+
+    private CompoundTag userCache;
+    private File saveDataPath;
+    private final MinecraftServer server;
+    private NullChannel nullChannel = new NullChannel();
+    private ServerChannel channel = new ServerChannel();
+
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         this.userCache.getCompound("nameCache").putString(event.getEntity().getUUID().toString(), event.getEntity().getGameProfile().getName());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new NameCachePack(userCache));
+    }
+
+    @SubscribeEvent
+    public void onTick(TickEvent.ServerTickEvent event) {
+        int tickCount = event.getServer().getTickCount();
+        if (channel == null) return;
+        if (tickCount % 40 == 0) channel.sendFullUpdate();
+        else channel.sendUpdate();
     }
 
     @SubscribeEvent
@@ -82,15 +98,22 @@ public class ServerChannelManager {
         this.saveDataPath = new File(server.getWorldPath(LevelResource.ROOT).toFile(), "data/BlackHoleStorage");
         try {
             if(!saveDataPath.exists()) saveDataPath.mkdirs();
+
             File userCacheFile = new File(saveDataPath, "UserCache.dat");
             if(userCacheFile.exists() && userCacheFile.isFile()){
-                DataInputStream inputStream = new DataInputStream(new FileInputStream(userCacheFile));
-                this.userCache = NbtIo.readCompressed(inputStream);
-                inputStream.close();
+                this.userCache = NbtIo.readCompressed(userCacheFile);
                 if (!this.userCache.contains("nameCache")) this.initializeNameCache();
             } else {
                 this.initializeNameCache();
             }
+
+            File channelFile = new File(saveDataPath, "Channel.dat");
+            if (channelFile.exists() && channelFile.isFile()) {
+                CompoundTag channelDat = NbtIo.readCompressed(channelFile);
+                channel.initialize(channelDat);
+            }
+
+
         } catch (Exception e) {
             throw new RuntimeException("BlackHoleStorage was unable to read it's data!", e);
         }
@@ -100,9 +123,12 @@ public class ServerChannelManager {
         try {
             File userCache = new File(saveDataPath, "UserCache.dat");
             if (!userCache.exists()) userCache.createNewFile();
-            DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(userCache));
-            NbtIo.writeCompressed(this.userCache, outputStream);
-            outputStream.close();
+            NbtIo.writeCompressed(this.userCache, userCache);
+
+            File channelFile = new File(saveDataPath, "Channel.dat");
+            if (!channelFile.exists()) channelFile.createNewFile();
+            NbtIo.writeCompressed(this.channel.getSaveData(), channelFile);
+
         } catch (Exception e) {
             throw new RuntimeException("BlackHoleStorage was unable to save it's data!", e);
         }
@@ -137,4 +163,9 @@ public class ServerChannelManager {
         }
         return userName;
     }
+
+    public ServerChannel getChannel(UUID ownerUUID, int channelId) {
+        return channel;
+    }
+
 }

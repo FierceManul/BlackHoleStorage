@@ -1,36 +1,40 @@
 package com.fiercemanul.blackholestorage.channel;
 
+import com.fiercemanul.blackholestorage.Config;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 
-public class Channel {
-    public HashMap<String, Integer> storageItems = new HashMap<>();
-    private final int maxStorageSize = 32768;
+public abstract class Channel {
+
+    public final HashMap<String, Integer> storageItems = new HashMap<>();
+    public int maxStorageSize = Config.MAX_SIZE_PRE_CHANNEL.get();
+
     public Channel() {}
 
-    public Channel(HashMap<String, Integer> storageItems) {
-        this.storageItems = storageItems;
-    }
+    public abstract void onItemChanged(String itemId, boolean listChanged);
 
     public void addItem(ItemStack itemStack) {
-        if (itemStack.hasTag() || itemStack.isEmpty() || storageItems.size() >= maxStorageSize) return;
-        String id = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
-        if (storageItems.containsKey(id)) {
-            int storageCount = storageItems.get(id);
+        if (itemStack.hasTag() || itemStack.isEmpty()) return;
+        String itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
+        if (storageItems.containsKey(itemId)) {
+            int storageCount = storageItems.get(itemId);
             int remainingSpaces = Integer.MAX_VALUE - storageCount;
             if (remainingSpaces >= itemStack.getCount()) {
-                storageItems.replace(id, storageCount + itemStack.getCount());
+                storageItems.replace(itemId, storageCount + itemStack.getCount());
                 itemStack.setCount(0);
             } else {
-                storageItems.replace(id, Integer.MAX_VALUE);
+                storageItems.replace(itemId, Integer.MAX_VALUE);
                 itemStack.setCount(itemStack.getCount() - remainingSpaces);
             }
+            onItemChanged(itemId, false);
         } else {
-            storageItems.put(id, itemStack.getCount());
+            if (storageItems.size() >= maxStorageSize) return;
+            storageItems.put(itemId, itemStack.getCount());
             itemStack.setCount(0);
+            onItemChanged(itemId, true);
         }
     }
 
@@ -41,13 +45,16 @@ public class Channel {
             int remainingSpaces = Integer.MAX_VALUE - storageCount;
             if (remainingSpaces >= count) {
                 storageItems.replace(itemId, storageCount + count);
+                onItemChanged(itemId, false);
                 return 0;
             } else {
                 storageItems.replace(itemId, Integer.MAX_VALUE);
+                onItemChanged(itemId, false);
                 return count - remainingSpaces;
             }
         } else {
             storageItems.put(itemId, count);
+            onItemChanged(itemId, true);
             return 0;
         }
     }
@@ -59,24 +66,29 @@ public class Channel {
      */
     public void fillItemStack(ItemStack itemStack, int count) {
         if (itemStack.isEmpty() || count == 0) return;
-        String id = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
-        if (storageItems.containsKey(id)) {
-            int storageCount = storageItems.get(id);
+        String itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
+        if (storageItems.containsKey(itemId)) {
+            int storageCount = storageItems.get(itemId);
             int remainingSpaces = Integer.MAX_VALUE - storageCount;
             if (count >= storageCount) {
-                storageItems.remove(id);
+                storageItems.remove(itemId);
                 itemStack.setCount(itemStack.getCount() + storageCount);
+                onItemChanged(itemId, true);
             } else if (remainingSpaces < -count) {
-                storageItems.replace(id, Integer.MAX_VALUE);
+                storageItems.replace(itemId, Integer.MAX_VALUE);
                 itemStack.setCount(itemStack.getCount() - remainingSpaces);
+                onItemChanged(itemId, false);
             } else {
-                storageItems.replace(id, storageCount - count);
+                storageItems.replace(itemId, storageCount - count);
                 itemStack.setCount(itemStack.getCount() + count);
+                onItemChanged(itemId, false);
             }
         } else {
             if (count < 0) {
-                storageItems.put(id, -count);
+                if (storageItems.size() >= maxStorageSize) return;
+                storageItems.put(itemId, -count);
                 itemStack.setCount(itemStack.getCount() + count);
+                onItemChanged(itemId, true);
             }
         }
     }
@@ -91,11 +103,13 @@ public class Channel {
     public ItemStack takeItem(String itemId, int count) {
         if (!storageItems.containsKey(itemId) || itemId.equals("minecraft:air") || count == 0) return ItemStack.EMPTY;
         int storageCount = storageItems.get(itemId);
-        if (count >= storageCount) {
+        if (count < storageCount) {
+            storageItems.replace(itemId, storageCount - count);
+            onItemChanged(itemId, false);
+        } else {
             storageItems.remove(itemId);
             count = storageCount;
-        } else {
-            storageItems.replace(itemId, storageCount - count);
+            onItemChanged(itemId, true);
         }
         return new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId)), count);
     }
@@ -108,21 +122,18 @@ public class Channel {
         ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId)), 1);
         count = Integer.min(count, itemStack.getMaxStackSize());
         int storageCount = storageItems.get(itemId);
-        if (count >= storageCount) {
+        if (count < storageCount) {
+            storageItems.replace(itemId, storageCount - count);
+            onItemChanged(itemId, false);
+        } else {
             storageItems.remove(itemId);
             count = storageCount;
-        } else {
-            storageItems.replace(itemId, storageCount - count);
+            onItemChanged(itemId, true);
         }
         itemStack.setCount(count);
         return itemStack;
     }
 
-    public void cleanEmpty() {
-        storageItems.remove("minecraft:air");
-        storageItems.remove(null);
-        storageItems.forEach((id, count) -> {
-            if (count <= 0) storageItems.remove(id);
-        });
-    }
+    public abstract boolean isRemoved();
+
 }

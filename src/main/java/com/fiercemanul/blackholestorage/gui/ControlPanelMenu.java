@@ -2,13 +2,11 @@ package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
-import com.fiercemanul.blackholestorage.channel.Channel;
-import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
+import com.fiercemanul.blackholestorage.channel.*;
 import com.fiercemanul.blackholestorage.network.ControlPanelMenuActionPack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
+import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -27,30 +25,29 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import javax.annotation.Nullable;
-import java.text.DecimalFormat;
 import java.util.*;
 
 import static com.fiercemanul.blackholestorage.BlackHoleStorage.CONTROL_PANEL_MENU;
 
 public class ControlPanelMenu extends AbstractContainerMenu {
 
+    protected final Player player;
+    private final Level level;
+    private final BlockPos blockPos;
+    public ControlPanelBlockEntity controlPanelBlock;
+    /**
+     * 便携终端所在物品槽位
+     */
+    private final int sourceSlotIndex;
     private final CraftingContainer craftSlots = new CraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
-    public final Channel channel = new Channel();
-    public final DummyContainer dummyContainer;
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat(",###");
-    private ContainerLevelAccess access;
-    protected Player player;
-    private Level level;
-    @Nullable
-    public ControlPanelBlockEntity controlPanelBlock;
-    public UUID owner;
-    public String ownerName;
+    public final Channel channel;
+    public DummyContainer dummyContainer;
+    public final UUID owner;
     public boolean locked = false;
     public UUID channelOwner;
-    public String channelOwnerName;
     public boolean craftingMode = false;
+    public String filter = "";
 
 
     public static final String[] SORT_TYPE = new String[]{
@@ -64,24 +61,24 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             "count_descending"
     };
 
+
+
     //客户端调用这个
     public ControlPanelMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
         super(CONTROL_PANEL_MENU.get(), containerId);
         this.level = playerInv.player.level;
-        this.access = ContainerLevelAccess.create(playerInv.player.level, extraData.readBlockPos());
         this.player = playerInv.player;
-        //客户端getBlockEntity会导致gui呼不出来,但为什么get不get都是null，get了就出问题了呢？
-        //this.controlPanelBlock = (ControlPanelBlockEntity) playerInv.player.level.getBlockEntity(extraData.readBlockPos());
+
+        this.blockPos = extraData.readBlockPos();
+        this.sourceSlotIndex = extraData.readInt();
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
         this.craftingMode = extraData.readNbt().getBoolean("craftingMode");
 
-        this.ownerName = ClientChannelManager.getInstance().getUserName(this.owner);
-
         addSlots(playerInv.player, playerInv);
 
         this.dummyContainer = new DummyContainer();
-
+        this.channel = ClientChannelManager.getInstance().getChannel(dummyContainer);
         //虚拟储存物品格51 ~ 149
         for (int i = 0; i < 7; i++) {
             for (int j = 0; j < 11; j++) {
@@ -101,21 +98,155 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     //服务端用这个
-    public ControlPanelMenu(int containerId, Inventory playerInv, Player player, Level level, BlockPos pos, CompoundTag nbt) {
+    public ControlPanelMenu(int containerId, Player player, ControlPanelBlockEntity blockEntity, int sourceSlotIndex) {
         super(CONTROL_PANEL_MENU.get(), containerId);
-        this.level = level;
-        this.access = ContainerLevelAccess.create(level, pos);
+        this.level = player.level;
         this.player = player;
-        this.controlPanelBlock = (ControlPanelBlockEntity) level.getBlockEntity(pos);
-        this.owner = nbt.getUUID("owner");
-        this.locked = nbt.getBoolean("locked");
-        this.craftingMode = nbt.getBoolean("craftingMode");
+        this.blockPos = blockEntity.getBlockPos();
+        this.controlPanelBlock = blockEntity;
+        this.sourceSlotIndex = sourceSlotIndex;
+        this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
+        this.locked = blockEntity.isLocked();
+        this.craftingMode = blockEntity.getCraftingMode();
 
-        this.ownerName = ServerChannelManager.getInstance().getUserName(this.owner);
+        this.channel = ServerChannelManager.getInstance().getChannel(BlackHoleStorage.FAKE_PLAYER_UUID, 0);
+        if (!channel.isRemoved()) ((ServerChannel)this.channel).addListener((ServerPlayer) player);
 
-        addSlots(player, playerInv);
+        addSlots(player, player.getInventory());
+    }
 
-        this.dummyContainer = null;
+    @Override
+    public void initializeContents(int pStateId, List<ItemStack> pItems, ItemStack pCarried) {
+        super.initializeContents(pStateId, pItems, pCarried);
+        if (level.isClientSide) dummyContainer.refreshContainer(true);
+    }
+
+    //按钮相关
+    @Override
+    public boolean clickMenuButton(Player pPlayer, int pId) {
+        switch (pId) {
+            //TODO: lock需要检查uuid，测试暂时不做
+            case 0 -> locked = !locked;
+            case 1 -> {
+                craftingMode = !craftingMode;
+            }
+        }
+        return pId < 2;
+    }
+
+
+    //本类方法
+
+    public void action(int actionId, String itemId, int count) {
+        switch (actionId) {
+            case Action.LEFT_CLICK_DUMMY_SLOT -> onLeftClickDummySlot(itemId, count);
+            case Action.Right_CLICK_DUMMY_SLOT -> onRightClickDummySlot(itemId, count);
+            case Action.LEFT_SHIFT_DUMMY_SLOT -> onLeftShiftDummySlot(itemId);
+            case Action.Right_SHIFT_DUMMY_SLOT -> onRightShiftDummySlot(itemId);
+            case Action.THROW_ONE -> tryThrowOneFromDummySlot(itemId);
+            case Action.THROW_STICK -> tryThrowStickFromDummySlot(itemId, count);
+            case Action.LEFT_DRAG -> onLeftDragDummySlot(itemId);
+            case Action.RIGHT_DRAG -> onRightDragDummySlot(itemId);
+            case Action.CLONE -> onCloneFormDummySlot(itemId);
+            case Action.DRAG_CLONE -> onDragCloneDummySlot(itemId);
+        }
+    }
+
+    private static final class Action {
+        public static final int LEFT_CLICK_DUMMY_SLOT = 0;
+        public static final int Right_CLICK_DUMMY_SLOT = 1;
+        public static final int LEFT_SHIFT_DUMMY_SLOT = 2;
+        public static final int Right_SHIFT_DUMMY_SLOT = 3;
+        public static final int THROW_ONE = 4;
+        public static final int THROW_STICK = 5;
+        public static final int LEFT_DRAG = 6;
+        public static final int RIGHT_DRAG = 7;
+        public static final int CLONE = 8;
+        public static final int DRAG_CLONE = 9;
+    }
+
+    public void onLeftClickDummySlot(String itemId, int count) {
+        ItemStack carried = getCarried();
+        if (carried.isEmpty()) {
+            if (itemId.equals("minecraft:air")) return;
+            setCarried(channel.takeItem(itemId, count));
+        } else {
+            channel.addItem(carried);
+        }
+    }
+
+    public void onRightClickDummySlot(String itemId, int count) {
+        ItemStack carried = getCarried();
+        if (carried.isEmpty()) {
+            if (itemId.equals("minecraft:air")) return;
+            setCarried(channel.takeItem(itemId, (count + 1) / 2));
+        } else {
+            channel.fillItemStack(carried, -1);
+        }
+    }
+
+    public void onLeftShiftDummySlot(String itemId) {
+        if (itemId.equals("minecraft:air")) return;
+        ItemStack itemStack = channel.saveTakeItem(itemId, 64);
+        if (itemStack.isEmpty()) {
+            return;
+        }
+        if (craftingMode) moveItemStackTo(itemStack, 41, 50, false);
+        else moveItemStackTo(itemStack, 0, 36, false);
+        //不要合并这两个if
+        if (!itemStack.isEmpty()) channel.addItem(itemStack);
+        if (!itemStack.isEmpty()) player.drop(itemStack, false);
+    }
+
+    public void onRightShiftDummySlot(String itemId) {
+        if (itemId.equals("minecraft:air")) return;
+        ItemStack itemStack = channel.takeItem(itemId, 1);
+        if (itemStack.isEmpty()) {
+            return;
+        }
+        if (craftingMode) moveItemStackTo(itemStack, 41, 50, false);
+        else moveItemStackTo(itemStack, 0, 36, false);
+        //不要合并这两个if
+        if (!itemStack.isEmpty()) channel.addItem(itemStack);
+        if (!itemStack.isEmpty()) player.drop(itemStack, false);
+    }
+
+    public void tryThrowOneFromDummySlot(String itemId) {
+        ItemStack itemStack = channel.takeItem(itemId, 1);
+        if (itemStack.isEmpty()) return;
+        player.drop(itemStack, false);
+    }
+
+    public void tryThrowStickFromDummySlot(String itemId, int count) {
+        ItemStack itemStack = channel.takeItem(itemId, count);
+        if (itemStack.isEmpty()) return;
+        player.drop(itemStack, false);
+    }
+
+    public void onLeftDragDummySlot(String itemId) {
+        ItemStack carried = getCarried();
+        if (carried.isEmpty()) return;
+        channel.addItem(carried);
+    }
+
+    public void onRightDragDummySlot(String itemId) {
+        ItemStack carried = getCarried();
+        if (carried.isEmpty()) return;
+        channel.fillItemStack(carried, -1);
+    }
+
+    public void onCloneFormDummySlot(String itemId) {
+        if (player.isCreative() && channel.storageItems.containsKey(itemId)) {
+            channel.addItem(itemId, channel.storageItems.get(itemId));
+        }
+    }
+
+    public void onDragCloneDummySlot(String itemId) {
+        ItemStack carried = getCarried();
+        if (carried.isEmpty()) return;
+        ItemStack itemStack = carried.copy();
+        itemStack.setCount(itemStack.getMaxStackSize());
+        channel.addItem(itemStack);
     }
 
     private void addSlots(Player player, Inventory playerInv) {
@@ -162,55 +293,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         });
     }
 
-
-    //按钮相关
-    @Override
-    public boolean clickMenuButton(Player pPlayer, int pId) {
-        switch (pId) {
-            //TODO: lock需要检查uuid，测试暂时不做
-            case 0 -> locked = !locked;
-            case 1 -> {
-                craftingMode = !craftingMode;
-                refreshDummyContainer();
-            }
-        }
-        return pId < 2;
-    }
-
-
-    //合成相关
-    protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftingContainer, ResultContainer resultContainer) {
-        if (!level.isClientSide) {
-            ServerPlayer serverplayer = (ServerPlayer) player;
-            ItemStack itemstack = ItemStack.EMPTY;
-            Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftingContainer, level);
-            if (optional.isPresent()) {
-                CraftingRecipe craftingrecipe = optional.get();
-                if (resultContainer.setRecipeUsed(level, serverplayer, craftingrecipe)) {
-                    itemstack = craftingrecipe.assemble(craftingContainer);
-                }
-            }
-
-            resultContainer.setItem(50, itemstack);
-            menu.setRemoteSlot(50, itemstack);
-            serverplayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 50, itemstack));
-        }
-    }
-
-    public void slotsChanged(Container container) {
-        this.access.execute((level, pos) -> {
-            slotChangedCraftingGrid(this, level, this.player, this.craftSlots, this.resultSlots);
-        });
-    }
-
-    @SuppressWarnings("unused")
-    public int getResultSlotIndex() {
-        return 50;
-    }
-
-
-    //本类方法
-
     private Slot getArmorSlot(Player player, Inventory inventory, EquipmentSlot equipmentslot, int slotId, int x, int y) {
         return new Slot(inventory, slotId, x, y) {
             public void set(ItemStack itemStack) {
@@ -240,154 +322,14 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     protected void clearCraftSlots() {
-        //TODO:物品送回频道
-        if (!player.isAlive() || player instanceof ServerPlayer && ((ServerPlayer) player).hasDisconnected()) {
-            for (int j = 0; j < this.craftSlots.getContainerSize(); ++j) {
-                player.drop(this.craftSlots.removeItemNoUpdate(j), false);
-            }
-
-        } else {
-            for (int i = 0; i < this.craftSlots.getContainerSize(); ++i) {
-                Inventory inventory = player.getInventory();
-                if (inventory.player instanceof ServerPlayer) {
-                    inventory.placeItemBackInInventory(this.craftSlots.removeItemNoUpdate(i));
-                }
-            }
-
+        for (int j = 0; j < this.craftSlots.getContainerSize(); ++j) {
+            ItemStack itemStack = this.craftSlots.removeItemNoUpdate(j);
+            channel.addItem(itemStack);
+            if (!itemStack.isEmpty()) player.drop(itemStack, false);
         }
     }
 
-    public void action(int actionId, String itemId, int count) {
-        switch (actionId) {
-            case Action.LEFT_CLICK_DUMMY_SLOT -> onLeftClickDummySlot(itemId, count);
-            case Action.Right_CLICK_DUMMY_SLOT -> onRightClickDummySlot(itemId, count);
-            case Action.LEFT_SHIFT_DUMMY_SLOT -> onLeftShiftDummySlot(itemId);
-            case Action.Right_SHIFT_DUMMY_SLOT -> onRightShiftDummySlot(itemId);
-            case Action.THROW_ONE -> tryThrowOneFromDummySlot(itemId);
-            case Action.THROW_STICK -> tryThrowStickFromDummySlot(itemId, count);
-            case Action.LEFT_DRAG -> onLeftDragDummySlot(itemId);
-            case Action.RIGHT_DRAG -> onRightDragDummySlot(itemId);
-            case Action.CLONE -> onCloneFormDummySlot(itemId);
-            case Action.DRAG_CLONE -> onDragCloneDummySlot(itemId);
-        }
-    }
-
-    private static final class Action {
-        public static final int LEFT_CLICK_DUMMY_SLOT = 0;
-        public static final int Right_CLICK_DUMMY_SLOT = 1;
-        public static final int LEFT_SHIFT_DUMMY_SLOT = 2;
-        public static final int Right_SHIFT_DUMMY_SLOT = 3;
-        public static final int THROW_ONE = 4;
-        public static final int THROW_STICK = 5;
-        public static final int LEFT_DRAG = 6;
-        public static final int RIGHT_DRAG = 7;
-        public static final int CLONE = 8;
-        public static final int DRAG_CLONE = 9;
-    }
-
-    public void onLeftClickDummySlot(String itemId, int count) {
-        ItemStack carried = getCarried();
-        if (carried.isEmpty()) {
-            if (itemId.equals("minecraft:air")) return;
-            setCarried(channel.takeItem(itemId, count));
-        } else {
-            channel.addItem(carried);
-        }
-        this.refreshDummyContainer();
-    }
-
-    public void onRightClickDummySlot(String itemId, int count) {
-        ItemStack carried = getCarried();
-        if (carried.isEmpty()) {
-            if (itemId.equals("minecraft:air")) return;
-            setCarried(channel.takeItem(itemId, (count + 1) / 2));
-        } else {
-            channel.fillItemStack(carried, -1);
-        }
-        this.refreshDummyContainer();
-    }
-
-    public void onLeftShiftDummySlot(String itemId) {
-        if (itemId.equals("minecraft:air")) return;
-        ItemStack itemStack = channel.saveTakeItem(itemId, 64);
-        if (itemStack.isEmpty()) {
-            this.refreshDummyContainer();
-            return;
-        }
-        if (craftingMode) moveItemStackTo(itemStack, 41, 50, false);
-        else moveItemStackTo(itemStack, 0, 36, false);
-        //不要合并这两个if
-        if (!itemStack.isEmpty()) channel.addItem(itemStack);
-        if (!itemStack.isEmpty()) player.drop(itemStack, false);
-        this.refreshDummyContainer();
-    }
-
-    public void onRightShiftDummySlot(String itemId) {
-        if (itemId.equals("minecraft:air")) return;
-        ItemStack itemStack = channel.takeItem(itemId, 1);
-        if (itemStack.isEmpty()) {
-            this.refreshDummyContainer();
-            return;
-        }
-        if (craftingMode) moveItemStackTo(itemStack, 41, 50, false);
-        else moveItemStackTo(itemStack, 0, 36, false);
-        //不要合并这两个if
-        if (!itemStack.isEmpty()) channel.addItem(itemStack);
-        if (!itemStack.isEmpty()) player.drop(itemStack, false);
-        this.refreshDummyContainer();
-    }
-
-    public void tryThrowOneFromDummySlot(String itemId) {
-        ItemStack itemStack = channel.takeItem(itemId, 1);
-        if (itemStack.isEmpty()) return;
-        player.drop(itemStack, false);
-        this.refreshDummyContainer();
-    }
-
-    public void tryThrowStickFromDummySlot(String itemId, int count) {
-        ItemStack itemStack = channel.takeItem(itemId, count);
-        if (itemStack.isEmpty()) return;
-        player.drop(itemStack, false);
-        this.refreshDummyContainer();
-    }
-
-    public void onLeftDragDummySlot(String itemId) {
-        ItemStack carried = getCarried();
-        if (carried.isEmpty()) return;
-        channel.addItem(carried);
-        this.refreshDummyContainer();
-    }
-
-    public void onRightDragDummySlot(String itemId) {
-        ItemStack carried = getCarried();
-        if (carried.isEmpty()) return;
-        channel.fillItemStack(carried, -1);
-        this.refreshDummyContainer();
-    }
-
-    public void onCloneFormDummySlot(String itemId) {
-        if (player.isCreative() && channel.storageItems.containsKey(itemId)) {
-            channel.addItem(itemId, channel.storageItems.get(itemId));
-        }
-        this.refreshDummyContainer();
-    }
-
-    public void onDragCloneDummySlot(String itemId) {
-        ItemStack carried = getCarried();
-        if (carried.isEmpty()) return;
-        ItemStack itemStack = carried.copy();
-        itemStack.setCount(itemStack.getMaxStackSize());
-        channel.addItem(itemStack);
-        this.refreshDummyContainer();
-    }
-
-    public void refreshDummyContainer() {
-        if (level.isClientSide) {
-            this.dummyContainer.refreshContainer();
-        }
-    }
-
-    public class DummySlot extends Slot {
+    private class DummySlot extends Slot {
         public DummySlot(int slotId, int x, int y) {
             super(dummyContainer, slotId, x, y);
         }
@@ -443,47 +385,93 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         public void setChanged() {
         }
     }
-
+    
     public class DummyContainer extends SimpleContainer {
+        protected String[] sortedItemNames = new String[0];
+        protected String[] filteredItemsNames = new String[0];
+        public String[] viewingItemNames = new String[0];
         public ArrayList<String> stringCountTemp = new ArrayList<>();
+
+        private double scrollTo = 0.0D;
+        private String search;
 
         public DummyContainer() {
             super(99);
         }
 
-        public void refreshContainer() {
-            if (level.isClientSide) {
-                int i;
-                if (craftingMode) i = Integer.min(77, channel.storageItems.size());
-                else i = Integer.min(99, channel.storageItems.size());
-                //
-                String[] itemNames = channel.storageItems.keySet().toArray(new String[0]);
-                stringCountTemp.clear();
-                for (int j = 0; j < 99; j++) {
-                    if (j < i) {
-                        //叠堆数为1避开原版的数字渲染
-                        ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemNames[j])));
-                        this.setItem(j, itemStack);
-                        int count = channel.storageItems.get(itemNames[j]);
-                        if (count < 1000 ) this.stringCountTemp.add(j, String.valueOf(count));
-                        else if (count < Integer.MAX_VALUE) {
-                            String stringCount = DECIMAL_FORMAT.format(count);
-                            stringCount = stringCount.substring(0, 4);
-                            if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
-                            stringCount = stringCount.replace(",", ".");
-                            if (count < 1000000) stringCount += "K";
-                            else if (count < 1000000000) stringCount += "M";
-                            else stringCount += "G";
-                            this.stringCountTemp.add(j, stringCount);
-                        } else this.stringCountTemp.add(j, "MAX");
-                    } else this.setItem(j, ItemStack.EMPTY);
+        public void onScrollTo(double scrollTo) {
+            this.scrollTo = scrollTo;
+            refreshContainer(true);
+        }
+
+        public double onMouseScrolled(boolean isUp) {
+            if (filteredItemsNames.length <= (craftingMode ? 77 : 99)) {
+                return 0.0D;
+            } else {
+                int i = (int) Math.ceil(filteredItemsNames.length / 11.0D);
+                i -= craftingMode ? 7 : 9;
+                int j = Math.round( i * (float)scrollTo);
+                if (isUp) j--; else j++;
+                j = Math.max(0, Math.min(i, j));
+                viewingItemNames = Arrays.copyOfRange(filteredItemsNames, j * 11, Math.min(filteredItemsNames.length, j * 11 + (craftingMode ? 77 : 99)));
+                scrollTo = (double) j / (double) i;
+                refreshContainer(false);
+                return scrollTo;
+            }
+        }
+
+        public void refreshContainer(boolean fullUpdate) {
+            if (!level.isClientSide || channel.storageItems.isEmpty()) return;
+            if (fullUpdate) {
+                sortedItemNames = channel.storageItems.keySet().toArray(new String[0]);
+                //sortedItemNames = Tools.sortItemFromCount(channel.storageItems, true);
+                Arrays.parallelSort(sortedItemNames);
+                //Arrays.parallelSort(sortItemNames, Collections.reverseOrder());
+                if (filter.equals("")) {
+                    filteredItemsNames = sortedItemNames.clone();
+                } else {
+                    ArrayList<String> temp = new ArrayList<>();
+                    for (String s : sortedItemNames) {
+                        if (s.contains(filter)) {
+                            temp.add(s);
+                            continue;
+                        }
+                    }
+                    filteredItemsNames = temp.toArray(new String[0]);
                 }
+                if (filteredItemsNames.length <= (craftingMode ? 77 : 99)) {
+                    viewingItemNames = filteredItemsNames.clone();
+                } else {
+                    int i = (int) Math.ceil(filteredItemsNames.length / 11.0D);
+                    i -= craftingMode ? 7 : 9;
+                    i = Math.round(i * (float) scrollTo);
+                    viewingItemNames = Arrays.copyOfRange(filteredItemsNames, i * 11, Math.min(filteredItemsNames.length, i * 11 + (craftingMode ? 77 : 99)));
+                }
+            }
+            stringCountTemp.clear();
+            for (int j = 0; j < (craftingMode ? 77 : 99); j++) {
+                if (j < viewingItemNames.length && viewingItemNames[j] != null) {
+                    //叠堆数为1避开原版的数字渲染
+                    ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(viewingItemNames[j])));
+                    this.setItem(j, itemStack);
+                    int count = channel.storageItems.get(viewingItemNames[j]);
+                    if (count < 1000 ) this.stringCountTemp.add(j, String.valueOf(count));
+                    else if (count < Integer.MAX_VALUE) {
+                        String stringCount = Tools.DECIMAL_FORMAT.format(count);
+                        stringCount = stringCount.substring(0, 4);
+                        if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
+                        stringCount = stringCount.replace(",", ".");
+                        if (count < 1000000) stringCount += "K";
+                        else if (count < 1000000000) stringCount += "M";
+                        else stringCount += "G";
+                        this.stringCountTemp.add(j, stringCount);
+                    } else this.stringCountTemp.add(j, "MAX");
+                } else this.setItem(j, ItemStack.EMPTY);
             }
         }
 
         @Override
-        public void setChanged() {
-        }
+        public void setChanged() {}
 
         @Override
         public int getMaxStackSize() {
@@ -581,7 +569,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
             }
             //剩下的SWAP无视掉(hot bar的快捷键)
-        } else super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
+        }
+        else if (pMouseX != sourceSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
     }
 
     @Override
@@ -599,13 +588,10 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     }
                 } else {
                     channel.addItem(movingStack);
-                    this.refreshDummyContainer();
                     return ItemStack.EMPTY;
                 }
             } else if (slotId == 50) {
-                this.access.execute((level, pos) -> {
-                    movingStack.getItem().onCraftedBy(movingStack, level, player);
-                });
+                movingStack.getItem().onCraftedBy(movingStack, level, player);
                 if (!this.moveItemStackTo(movingStack, 0, 36, true)) {
                     return ItemStack.EMPTY;
                 }
@@ -640,20 +626,52 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(this.access, player, BlackHoleStorage.CONTROL_PANEL.get());
+        return !controlPanelBlock.isRemoved() &&
+                !channel.isRemoved() &&
+                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 16.0D;
     }
 
     @Override
     public void removed(Player player) {
         if (level.isClientSide) return;
+        if (!channel.isRemoved()) ((ServerChannel)channel).removeListener((ServerPlayer) player);
         super.removed(player);
-        this.access.execute((level, pos) -> {
-            clearCraftSlots();
-        });
+        clearCraftSlots();
         controlPanelBlock.setLocked(locked);
         if (!locked) {
             controlPanelBlock.setCraftingMode(craftingMode);
         }
+    }
+
+
+
+
+    //合成相关
+    protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftingContainer, ResultContainer resultContainer) {
+        if (!level.isClientSide) {
+            ServerPlayer serverplayer = (ServerPlayer) player;
+            ItemStack itemstack = ItemStack.EMPTY;
+            Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftingContainer, level);
+            if (optional.isPresent()) {
+                CraftingRecipe craftingrecipe = optional.get();
+                if (resultContainer.setRecipeUsed(level, serverplayer, craftingrecipe)) {
+                    itemstack = craftingrecipe.assemble(craftingContainer);
+                }
+            }
+
+            resultContainer.setItem(50, itemstack);
+            menu.setRemoteSlot(50, itemstack);
+            serverplayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 50, itemstack));
+        }
+    }
+
+    public void slotsChanged(Container container) {
+        slotChangedCraftingGrid(this, level, this.player, this.craftSlots, this.resultSlots);
+    }
+
+    @SuppressWarnings("unused")
+    public int getResultSlotIndex() {
+        return 50;
     }
 
 

@@ -118,20 +118,16 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
 
     @Override
     public InteractionResult use(BlockState blockState, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+
         if (!level.isClientSide && !player.isSpectator()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
-                CompoundTag serverNbt = new CompoundTag();
-                UUID owner = (controlPanelBlockEntity.getOwner() == null) ? player.getUUID() : controlPanelBlockEntity.getOwner();
-                serverNbt.putUUID("owner", owner);
-                serverNbt.putBoolean("locked", controlPanelBlockEntity.isLocked());
-                serverNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
 
                 MenuProvider containerProvider = new MenuProvider() {
 
                     @Override
                     public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-                        return new ControlPanelMenu(containerId, playerInventory, player, level, pos, serverNbt);
+                        return new ControlPanelMenu(containerId, player, controlPanelBlockEntity, -2);
                     }
 
                     @Override
@@ -141,9 +137,11 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                 };
 
                 CompoundTag clientNbt = new CompoundTag();
+                UUID owner = (controlPanelBlockEntity.getOwner() == null) ? player.getUUID() : controlPanelBlockEntity.getOwner();
                 clientNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
                 NetworkHooks.openScreen((ServerPlayer) player, containerProvider, buf -> {
                     buf.writeBlockPos(pos);
+                    buf.writeInt(-2);
                     buf.writeUUID(owner);
                     buf.writeBoolean(controlPanelBlockEntity.isLocked());
                     buf.writeNbt(clientNbt);

@@ -88,6 +88,7 @@ public class BlackHoleStorage {
         MinecraftForge.EVENT_BUS.register(this);
 
         NetworkHandler.init();
+        Config.register();
     }
 }
 
