@@ -261,6 +261,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         if (shortSearchBox.isFocused() || longSearchBox.isFocused()){
             if (pKeyCode >= InputConstants.KEY_0 && pKeyCode <= InputConstants.KEY_Z) return true;
         }
+        if (pKeyCode == InputConstants.KEY_LSHIFT) menu.LShifting = true;
         return super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
 
@@ -280,6 +281,10 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
                 shortSearchBox.setValue(s);
                 menu.dummyContainer.refreshContainer(true);
             }
+        }
+        if (pKeyCode == InputConstants.KEY_LSHIFT) {
+            menu.LShifting = false;
+            menu.dummyContainer.refreshContainer(true);
         }
         return super.keyReleased(pKeyCode, pScanCode, pModifiers);
     }

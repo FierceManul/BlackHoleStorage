@@ -52,9 +52,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public boolean craftingMode = false;
     public String filter = "";
     public int sortType = 0;
-
-
-
+    public boolean LShifting = false;
 
 
     //客户端调用这个
@@ -108,7 +106,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.sortType = blockEntity.getSortType();
 
         this.channel = ServerChannelManager.getInstance().getChannel(BlackHoleStorage.FAKE_PLAYER_UUID, 0);
-        if (!channel.isRemoved()) ((ServerChannel)this.channel).addListener((ServerPlayer) player);
+        if (!channel.isRemoved()) ((ServerChannel) this.channel).addListener((ServerPlayer) player);
 
         addSlots(player, player.getInventory());
     }
@@ -345,12 +343,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (sortType > 7) sortType = sortType % 8;
         dummyContainer.refreshContainer(true);
     }
+
     public void reverseSort() {
         if (sortType % 2 == 0) sortType++;
         else sortType--;
         dummyContainer.refreshContainer(true);
     }
-    
+
     public class DummyContainer extends SimpleContainer {
         protected ArrayList<String> sortedItemNames = new ArrayList<>();
         public ArrayList<String> viewingItemNames = new ArrayList<>();
@@ -374,8 +373,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             } else {
                 int i = (int) Math.ceil(sortedItemNames.size() / 11.0D);
                 i -= craftingMode ? 7 : 9;
-                int j = Math.round( i * (float)scrollTo);
-                if (isUp) j--; else j++;
+                int j = Math.round(i * (float) scrollTo);
+                if (isUp) j--;
+                else j++;
                 j = Math.max(0, Math.min(i, j));
                 viewingItemNames = new ArrayList<>(sortedItemNames.subList(
                         j * 11,
@@ -389,7 +389,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
         public void refreshContainer(boolean fullUpdate) {
             if (!level.isClientSide || channel.storageItems.isEmpty()) return;
-            if (fullUpdate || sortType >= 6) {
+            if ((fullUpdate || sortType >= 6) && !LShifting) {
                 sortedItemNames = new ArrayList<>(channel.storageItems.keySet());
                 if (!filter.equals("")) {
                     char head = filter.charAt(0);
@@ -415,7 +415,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                             if (itemName.contains(filter)) temp.add(itemName);
                             else {
                                 ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)));
-                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp.add(itemName);
+                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter))
+                                    temp.add(itemName);
                             }
                         }
                     }
@@ -423,13 +424,18 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
                 switch (sortType) {
                     case Sort.ID_ASCENDING -> sortedItemNames.sort(Tools::sortItemFromRightID);
-                    case Sort.ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromRightID));
+                    case Sort.ID_DESCENDING ->
+                            sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromRightID));
                     case Sort.NAMESPACE_ID_ASCENDING -> sortedItemNames.sort(String::compareTo);
-                    case Sort.NAMESPACE_ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(String::compareTo));
+                    case Sort.NAMESPACE_ID_DESCENDING ->
+                            sortedItemNames.sort(Collections.reverseOrder(String::compareTo));
                     case Sort.MIRROR_ID_ASCENDING -> sortedItemNames.sort(Tools::sortItemFromMirrorID);
-                    case Sort.MIRROR_ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromMirrorID));
-                    case Sort.COUNT_ASCENDING -> sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, false));
-                    case Sort.COUNT_DESCENDING -> sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, true));
+                    case Sort.MIRROR_ID_DESCENDING ->
+                            sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromMirrorID));
+                    case Sort.COUNT_ASCENDING ->
+                            sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, false));
+                    case Sort.COUNT_DESCENDING ->
+                            sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, true));
                 }
                 if (sortedItemNames.size() <= (craftingMode ? 77 : 99)) {
                     viewingItemNames = sortedItemNames;
@@ -449,8 +455,12 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     //叠堆数为1避开原版的数字渲染
                     ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(viewingItemNames.get(j))));
                     this.setItem(j, itemStack);
+                    if (!channel.storageItems.containsKey(viewingItemNames.get(j))) {
+                        formatCount.add(j, "§c0");
+                        continue;
+                    }
                     int count = channel.storageItems.get(viewingItemNames.get(j));
-                    if (count < 1000 ) this.formatCount.add(j, String.valueOf(count));
+                    if (count < 1000) formatCount.add(j, String.valueOf(count));
                     else if (count < Integer.MAX_VALUE) {
                         String stringCount = Tools.DECIMAL_FORMAT.format(count);
                         stringCount = stringCount.substring(0, 4);
@@ -459,14 +469,15 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         if (count < 1000000) stringCount += "K";
                         else if (count < 1000000000) stringCount += "M";
                         else stringCount += "G";
-                        this.formatCount.add(j, stringCount);
-                    } else this.formatCount.add(j, "MAX");
+                        formatCount.add(j, stringCount);
+                    } else formatCount.add(j, "MAX");
                 } else this.setItem(j, ItemStack.EMPTY);
             }
         }
 
         @Override
-        public void setChanged() {}
+        public void setChanged() {
+        }
 
         @Override
         public int getMaxStackSize() {
@@ -621,8 +632,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
             }
             //剩下的SWAP无视掉(hot bar的快捷键)
-        }
-        else if (pMouseX != sourceSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
+        } else if (pMouseX != sourceSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
     }
 
     @Override
@@ -686,7 +696,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         if (level.isClientSide) return;
-        if (!channel.isRemoved()) ((ServerChannel)channel).removeListener((ServerPlayer) player);
+        if (!channel.isRemoved()) ((ServerChannel) channel).removeListener((ServerPlayer) player);
         super.removed(player);
         clearCraftSlots();
         controlPanelBlock.setLocked(locked);
@@ -696,8 +706,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             controlPanelBlock.setSortType(sortType);
         }
     }
-
-
 
 
     //合成相关
