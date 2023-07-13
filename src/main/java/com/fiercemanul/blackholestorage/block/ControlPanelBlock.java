@@ -3,7 +3,6 @@ package com.fiercemanul.blackholestorage.block;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -136,15 +135,15 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                     }
                 };
 
-                CompoundTag clientNbt = new CompoundTag();
                 UUID owner = (controlPanelBlockEntity.getOwner() == null) ? player.getUUID() : controlPanelBlockEntity.getOwner();
-                clientNbt.putBoolean("craftingMode", controlPanelBlockEntity.getCraftingMode());
                 NetworkHooks.openScreen((ServerPlayer) player, containerProvider, buf -> {
                     buf.writeBlockPos(pos);
                     buf.writeInt(-2);
                     buf.writeUUID(owner);
                     buf.writeBoolean(controlPanelBlockEntity.isLocked());
-                    buf.writeNbt(clientNbt);
+                    buf.writeBoolean(controlPanelBlockEntity.getCraftingMode());
+                    buf.writeUtf(controlPanelBlockEntity.getFilter(), 64);
+                    buf.writeInt(controlPanelBlockEntity.getSortType());
                 });
             }
         }

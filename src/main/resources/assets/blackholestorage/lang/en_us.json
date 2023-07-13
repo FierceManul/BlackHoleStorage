@@ -1,6 +1,18 @@
 {
     "screen.bhs.control_panel": "",
+    "bhs.GUI.line": "---------------------",
     "bhs.GUI.owner": "Owner: %d",
     "bhs.GUI.owner.private": "Owner: §c%d",
-    "bhs.GUI.search": "search"
+    "bhs.GUI.search": "search",
+    "bhs.GUI.search.tip1": "Empty prefix search ID and Name",
+    "bhs.GUI.search.tip2": "Prefix \"§a*§r\" search ID only",
+    "bhs.GUI.search.tip3": "Prefix \"§a$§r\" search Tags",
+    "bhs.GUI.sort.ascending": "Ascending",
+    "bhs.GUI.sort.descending": "Descending",
+    "bhs.GUI.sort.id": "Sort : §aID",
+    "bhs.GUI.sort.nid": "Sort : §aMOD then ID",
+    "bhs.GUI.sort.mirror_id": "Sort : §aMirror ID",
+    "bhs.GUI.sort.count": "Sort : §aCount",
+    "bhs.GUI.sort.tip1": "§aLMB§r : Cycle sort type",
+    "bhs.GUI.sort.tip2": "§dLSHIFT§r + §aLMB§r : Switch ascending"
 }

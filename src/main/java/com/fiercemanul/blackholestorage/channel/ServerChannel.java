@@ -108,6 +108,7 @@ public class ServerChannel extends Channel{
     }
 
     public void setRemoved() {
+        players.clear();
         this.removed = true;
     }
 }

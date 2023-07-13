@@ -11,9 +11,12 @@ import static com.fiercemanul.blackholestorage.BlackHoleStorage.CONTROL_PANEL_BL
 
 public class ControlPanelBlockEntity extends BlockEntity {
 
-    private boolean craftingMode = false;
     private UUID owner;
     private boolean locked = false;
+    private boolean craftingMode = false;
+    private String filter = "";
+    private int sortType = 4;
+
 
     public ControlPanelBlockEntity(BlockPos pos, BlockState state) {
         super(CONTROL_PANEL_BLOCK_ENTITY.get(), pos, state);
@@ -23,21 +26,25 @@ public class ControlPanelBlockEntity extends BlockEntity {
 
     @Override
     public void load(CompoundTag pTag) {
-        //TODO: 这里要防null
-        craftingMode = pTag.getBoolean("craftingMode");
+        //这里要防null
         if (pTag.contains("owner")) {
             owner = pTag.getUUID("owner");
             locked = pTag.getBoolean("locked");
         }
+        if (pTag.contains("craftingMode")) craftingMode = pTag.getBoolean("craftingMode");
+        if (pTag.contains("filter")) filter = pTag.getString("filter");
+        if (pTag.contains("sortType")) sortType = pTag.getInt("sortType");
     }
 
     @Override
     protected void saveAdditional(CompoundTag pTag) {
-        pTag.putBoolean("craftingMode", craftingMode);
         if (owner != null) {
             pTag.putUUID("owner", owner);
             pTag.putBoolean("locked", locked);
         }
+        pTag.putBoolean("craftingMode", craftingMode);
+        pTag.putString("filter", filter);
+        pTag.putInt("sortType", sortType);
     }
 
 
@@ -53,6 +60,13 @@ public class ControlPanelBlockEntity extends BlockEntity {
         return craftingMode;
     }
 
+    public String getFilter() {
+        return filter;
+    }
+
+    public int getSortType() {
+        return sortType;
+    }
 
     public void setOwner(UUID owner) {
         this.owner = owner;
@@ -66,6 +80,16 @@ public class ControlPanelBlockEntity extends BlockEntity {
 
     public void setCraftingMode(Boolean craftingMode) {
         this.craftingMode = craftingMode;
+        this.setChanged();
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+        this.setChanged();
+    }
+
+    public void setSortType(int sortType) {
+        this.sortType = sortType;
         this.setChanged();
     }
 }

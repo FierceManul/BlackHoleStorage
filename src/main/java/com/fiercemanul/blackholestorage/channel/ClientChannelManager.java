@@ -70,6 +70,10 @@ public class ClientChannelManager {
         return userName;
     }
 
+    public ClientChannel getChannel() {
+        return channel;
+    }
+
     public ClientChannel getChannel(ControlPanelMenu.DummyContainer container) {
         channel.addListener(container);
         return channel;

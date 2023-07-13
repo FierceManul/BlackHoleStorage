@@ -2,7 +2,10 @@ package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import com.fiercemanul.blackholestorage.channel.*;
+import com.fiercemanul.blackholestorage.channel.Channel;
+import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
+import com.fiercemanul.blackholestorage.channel.ServerChannel;
+import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
 import com.fiercemanul.blackholestorage.network.ControlPanelMenuActionPack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.fiercemanul.blackholestorage.util.Tools;
@@ -48,18 +51,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public UUID channelOwner;
     public boolean craftingMode = false;
     public String filter = "";
+    public int sortType = 0;
 
 
-    public static final String[] SORT_TYPE = new String[]{
-            "namespace_id_ascending",
-            "namespace_id_descending",
-            "id_ascending",
-            "id_descending",
-            "mirror_id_ascending",
-            "mirror_id_descending",
-            "count_ascending",
-            "count_descending"
-    };
 
 
 
@@ -73,7 +67,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.sourceSlotIndex = extraData.readInt();
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
-        this.craftingMode = extraData.readNbt().getBoolean("craftingMode");
+        this.craftingMode = extraData.readBoolean();
+        this.filter = extraData.readUtf(64);
+        this.sortType = extraData.readInt();
 
         addSlots(playerInv.player, playerInv);
 
@@ -108,6 +104,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
         this.locked = blockEntity.isLocked();
         this.craftingMode = blockEntity.getCraftingMode();
+        this.filter = blockEntity.getFilter();
+        this.sortType = blockEntity.getSortType();
 
         this.channel = ServerChannelManager.getInstance().getChannel(BlackHoleStorage.FAKE_PLAYER_UUID, 0);
         if (!channel.isRemoved()) ((ServerChannel)this.channel).addListener((ServerPlayer) player);
@@ -125,11 +123,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     @Override
     public boolean clickMenuButton(Player pPlayer, int pId) {
         switch (pId) {
-            //TODO: lock需要检查uuid，测试暂时不做
-            case 0 -> locked = !locked;
-            case 1 -> {
-                craftingMode = !craftingMode;
+            case 0 -> {
+                if (owner.equals(player.getUUID()) || owner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) locked = !locked;
             }
+            case 1 -> craftingMode = !craftingMode;
+            case 2 -> nextSort();
+            case 3 -> reverseSort();
+
         }
         return pId < 2;
     }
@@ -329,6 +329,152 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
     }
 
+    public static class Sort {
+        public static final int ID_ASCENDING = 0;
+        public static final int ID_DESCENDING = 1;
+        public static final int NAMESPACE_ID_ASCENDING = 2;
+        public static final int NAMESPACE_ID_DESCENDING = 3;
+        public static final int MIRROR_ID_ASCENDING = 4;
+        public static final int MIRROR_ID_DESCENDING = 5;
+        public static final int COUNT_ASCENDING = 6;
+        public static final int COUNT_DESCENDING = 7;
+    }
+
+    public void nextSort() {
+        sortType += 2;
+        if (sortType > 7) sortType = sortType % 8;
+        dummyContainer.refreshContainer(true);
+    }
+    public void reverseSort() {
+        if (sortType % 2 == 0) sortType++;
+        else sortType--;
+        dummyContainer.refreshContainer(true);
+    }
+    
+    public class DummyContainer extends SimpleContainer {
+        protected ArrayList<String> sortedItemNames = new ArrayList<>();
+        public ArrayList<String> viewingItemNames = new ArrayList<>();
+        public ArrayList<String> formatCount = new ArrayList<>();
+
+        private double scrollTo = 0.0D;
+        private String search;
+
+        public DummyContainer() {
+            super(99);
+        }
+
+        public void onScrollTo(double scrollTo) {
+            this.scrollTo = scrollTo;
+            refreshContainer(true);
+        }
+
+        public double onMouseScrolled(boolean isUp) {
+            if (sortedItemNames.size() <= (craftingMode ? 77 : 99)) {
+                return 0.0D;
+            } else {
+                int i = (int) Math.ceil(sortedItemNames.size() / 11.0D);
+                i -= craftingMode ? 7 : 9;
+                int j = Math.round( i * (float)scrollTo);
+                if (isUp) j--; else j++;
+                j = Math.max(0, Math.min(i, j));
+                viewingItemNames = new ArrayList<>(sortedItemNames.subList(
+                        j * 11,
+                        Math.min(sortedItemNames.size(), j * 11 + (craftingMode ? 77 : 99))
+                ));
+                scrollTo = (double) j / (double) i;
+                refreshContainer(false);
+                return scrollTo;
+            }
+        }
+
+        public void refreshContainer(boolean fullUpdate) {
+            if (!level.isClientSide || channel.storageItems.isEmpty()) return;
+            if (fullUpdate || sortType >= 6) {
+                sortedItemNames = new ArrayList<>(channel.storageItems.keySet());
+                if (!filter.equals("")) {
+                    char head = filter.charAt(0);
+                    ArrayList<String> temp = new ArrayList<>();
+                    if (head == '*') {
+                        for (String itemName : sortedItemNames) {
+                            if (itemName.contains(filter.substring(1))) temp.add(itemName);
+                        }
+                    } else if (head == '$') {
+                        for (String itemName : sortedItemNames) {
+                            ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)));
+                            ArrayList<String> tags = new ArrayList<>();
+                            itemStack.getTags().forEach(itemTagKey -> tags.add(itemTagKey.location().getPath()));
+                            for (String tag : tags) {
+                                if (tag.contains(filter.substring(1))) {
+                                    temp.add(itemName);
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        for (String itemName : sortedItemNames) {
+                            if (itemName.contains(filter)) temp.add(itemName);
+                            else {
+                                ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)));
+                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp.add(itemName);
+                            }
+                        }
+                    }
+                    sortedItemNames = temp;
+                }
+                switch (sortType) {
+                    case Sort.ID_ASCENDING -> sortedItemNames.sort(Tools::sortItemFromRightID);
+                    case Sort.ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromRightID));
+                    case Sort.NAMESPACE_ID_ASCENDING -> sortedItemNames.sort(String::compareTo);
+                    case Sort.NAMESPACE_ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(String::compareTo));
+                    case Sort.MIRROR_ID_ASCENDING -> sortedItemNames.sort(Tools::sortItemFromMirrorID);
+                    case Sort.MIRROR_ID_DESCENDING -> sortedItemNames.sort(Collections.reverseOrder(Tools::sortItemFromMirrorID));
+                    case Sort.COUNT_ASCENDING -> sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, false));
+                    case Sort.COUNT_DESCENDING -> sortedItemNames.sort((s1, s2) -> Tools.sortItemFromCount(s1, s2, channel.storageItems, true));
+                }
+                if (sortedItemNames.size() <= (craftingMode ? 77 : 99)) {
+                    viewingItemNames = sortedItemNames;
+                } else {
+                    int i = (int) Math.ceil(sortedItemNames.size() / 11.0D);
+                    i -= craftingMode ? 7 : 9;
+                    i = Math.round(i * (float) scrollTo);
+                    viewingItemNames = new ArrayList<>(sortedItemNames.subList(
+                            i * 11,
+                            Math.min(sortedItemNames.size(), i * 11 + (craftingMode ? 77 : 99))
+                    ));
+                }
+            }
+            formatCount.clear();
+            for (int j = 0; j < (craftingMode ? 77 : 99); j++) {
+                if (j < viewingItemNames.size() && viewingItemNames.get(j) != null) {
+                    //叠堆数为1避开原版的数字渲染
+                    ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(viewingItemNames.get(j))));
+                    this.setItem(j, itemStack);
+                    int count = channel.storageItems.get(viewingItemNames.get(j));
+                    if (count < 1000 ) this.formatCount.add(j, String.valueOf(count));
+                    else if (count < Integer.MAX_VALUE) {
+                        String stringCount = Tools.DECIMAL_FORMAT.format(count);
+                        stringCount = stringCount.substring(0, 4);
+                        if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
+                        stringCount = stringCount.replace(",", ".");
+                        if (count < 1000000) stringCount += "K";
+                        else if (count < 1000000000) stringCount += "M";
+                        else stringCount += "G";
+                        this.formatCount.add(j, stringCount);
+                    } else this.formatCount.add(j, "MAX");
+                } else this.setItem(j, ItemStack.EMPTY);
+            }
+        }
+
+        @Override
+        public void setChanged() {}
+
+        @Override
+        public int getMaxStackSize() {
+            return Integer.MAX_VALUE;
+        }
+
+    }
+
     private class DummySlot extends Slot {
         public DummySlot(int slotId, int x, int y) {
             super(dummyContainer, slotId, x, y);
@@ -384,100 +530,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         @Override
         public void setChanged() {
         }
-    }
-    
-    public class DummyContainer extends SimpleContainer {
-        protected String[] sortedItemNames = new String[0];
-        protected String[] filteredItemsNames = new String[0];
-        public String[] viewingItemNames = new String[0];
-        public ArrayList<String> stringCountTemp = new ArrayList<>();
-
-        private double scrollTo = 0.0D;
-        private String search;
-
-        public DummyContainer() {
-            super(99);
-        }
-
-        public void onScrollTo(double scrollTo) {
-            this.scrollTo = scrollTo;
-            refreshContainer(true);
-        }
-
-        public double onMouseScrolled(boolean isUp) {
-            if (filteredItemsNames.length <= (craftingMode ? 77 : 99)) {
-                return 0.0D;
-            } else {
-                int i = (int) Math.ceil(filteredItemsNames.length / 11.0D);
-                i -= craftingMode ? 7 : 9;
-                int j = Math.round( i * (float)scrollTo);
-                if (isUp) j--; else j++;
-                j = Math.max(0, Math.min(i, j));
-                viewingItemNames = Arrays.copyOfRange(filteredItemsNames, j * 11, Math.min(filteredItemsNames.length, j * 11 + (craftingMode ? 77 : 99)));
-                scrollTo = (double) j / (double) i;
-                refreshContainer(false);
-                return scrollTo;
-            }
-        }
-
-        public void refreshContainer(boolean fullUpdate) {
-            if (!level.isClientSide || channel.storageItems.isEmpty()) return;
-            if (fullUpdate) {
-                sortedItemNames = channel.storageItems.keySet().toArray(new String[0]);
-                //sortedItemNames = Tools.sortItemFromCount(channel.storageItems, true);
-                Arrays.parallelSort(sortedItemNames);
-                //Arrays.parallelSort(sortItemNames, Collections.reverseOrder());
-                if (filter.equals("")) {
-                    filteredItemsNames = sortedItemNames.clone();
-                } else {
-                    ArrayList<String> temp = new ArrayList<>();
-                    for (String s : sortedItemNames) {
-                        if (s.contains(filter)) {
-                            temp.add(s);
-                            continue;
-                        }
-                    }
-                    filteredItemsNames = temp.toArray(new String[0]);
-                }
-                if (filteredItemsNames.length <= (craftingMode ? 77 : 99)) {
-                    viewingItemNames = filteredItemsNames.clone();
-                } else {
-                    int i = (int) Math.ceil(filteredItemsNames.length / 11.0D);
-                    i -= craftingMode ? 7 : 9;
-                    i = Math.round(i * (float) scrollTo);
-                    viewingItemNames = Arrays.copyOfRange(filteredItemsNames, i * 11, Math.min(filteredItemsNames.length, i * 11 + (craftingMode ? 77 : 99)));
-                }
-            }
-            stringCountTemp.clear();
-            for (int j = 0; j < (craftingMode ? 77 : 99); j++) {
-                if (j < viewingItemNames.length && viewingItemNames[j] != null) {
-                    //叠堆数为1避开原版的数字渲染
-                    ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(viewingItemNames[j])));
-                    this.setItem(j, itemStack);
-                    int count = channel.storageItems.get(viewingItemNames[j]);
-                    if (count < 1000 ) this.stringCountTemp.add(j, String.valueOf(count));
-                    else if (count < Integer.MAX_VALUE) {
-                        String stringCount = Tools.DECIMAL_FORMAT.format(count);
-                        stringCount = stringCount.substring(0, 4);
-                        if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
-                        stringCount = stringCount.replace(",", ".");
-                        if (count < 1000000) stringCount += "K";
-                        else if (count < 1000000000) stringCount += "M";
-                        else stringCount += "G";
-                        this.stringCountTemp.add(j, stringCount);
-                    } else this.stringCountTemp.add(j, "MAX");
-                } else this.setItem(j, ItemStack.EMPTY);
-            }
-        }
-
-        @Override
-        public void setChanged() {}
-
-        @Override
-        public int getMaxStackSize() {
-            return Integer.MAX_VALUE;
-        }
-
     }
 
 
@@ -640,6 +692,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         controlPanelBlock.setLocked(locked);
         if (!locked) {
             controlPanelBlock.setCraftingMode(craftingMode);
+            controlPanelBlock.setFilter(filter);
+            controlPanelBlock.setSortType(sortType);
         }
     }
 

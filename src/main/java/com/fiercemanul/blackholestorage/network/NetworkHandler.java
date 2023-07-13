@@ -43,5 +43,11 @@ public class NetworkHandler {
                 ChannelPack::new,
                 ChannelPack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(5,
+                ControlPanelFilterPack.class,
+                ControlPanelFilterPack::makePack,
+                ControlPanelFilterPack::new,
+                ControlPanelFilterPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }
