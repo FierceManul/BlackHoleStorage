@@ -1,4 +1,10 @@
 {
+    "block.blackholestorage.passive_port": "Passive Port",
+    "block.blackholestorage.active_port": "Active Port",
+    "block.blackholestorage.control_panel": "Control Panel",
+    "item.blackholestorage.portable_control_panel": "Portable Control Panel",
+    "item.blackholestorage.core": "Black Hole Logic Core",
+    "item.blackholestorage.storage_core": "Black Hole Storage Core",
     "screen.bhs.control_panel": "",
     "bhs.GUI.line": "---------------------",
     "bhs.GUI.owner": "Owner: %d",

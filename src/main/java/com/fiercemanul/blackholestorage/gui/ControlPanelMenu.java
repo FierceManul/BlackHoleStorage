@@ -10,6 +10,7 @@ import com.fiercemanul.blackholestorage.network.ControlPanelMenuActionPack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -41,7 +42,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     /**
      * 便携终端所在物品槽位
      */
-    private final int sourceSlotIndex;
+    private final int panelItemSlotIndex;
+    private final ItemStack panelItem;
     private final CraftingContainer craftSlots = new CraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
     public final Channel channel;
@@ -62,12 +64,16 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.player = playerInv.player;
 
         this.blockPos = extraData.readBlockPos();
-        this.sourceSlotIndex = extraData.readInt();
+        this.panelItemSlotIndex = extraData.readInt();
+
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
         this.craftingMode = extraData.readBoolean();
         this.filter = extraData.readUtf(64);
         this.sortType = extraData.readInt();
+
+        if (panelItemSlotIndex >= 0) this.panelItem = player.getInventory().getItem(panelItemSlotIndex);
+        else this.panelItem = ItemStack.EMPTY;
 
         addSlots(playerInv.player, playerInv);
 
@@ -92,18 +98,32 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     //服务端用这个
-    public ControlPanelMenu(int containerId, Player player, ControlPanelBlockEntity blockEntity, int sourceSlotIndex) {
+    public ControlPanelMenu(int containerId, Player player, ControlPanelBlockEntity blockEntity, int panelItemSlotIndex) {
         super(CONTROL_PANEL_MENU.get(), containerId);
         this.level = player.level;
         this.player = player;
-        this.blockPos = blockEntity.getBlockPos();
-        this.controlPanelBlock = blockEntity;
-        this.sourceSlotIndex = sourceSlotIndex;
-        this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
-        this.locked = blockEntity.isLocked();
-        this.craftingMode = blockEntity.getCraftingMode();
-        this.filter = blockEntity.getFilter();
-        this.sortType = blockEntity.getSortType();
+        this.panelItemSlotIndex = panelItemSlotIndex;
+
+        if (panelItemSlotIndex >= 0) {
+            this.blockPos = BlockPos.ZERO;
+            this.controlPanelBlock = null;
+            this.panelItem = player.getInventory().getItem(panelItemSlotIndex);
+            CompoundTag nbt = panelItem.getTag();
+            this.owner = nbt.contains("owner") ? nbt.getUUID("owner") : player.getUUID();
+            this.locked = nbt.getBoolean("locked");
+            this.craftingMode = nbt.getBoolean("craftingMode");
+            this.filter = nbt.getString("filter");
+            this.sortType = nbt.getInt("sortType");
+        } else {
+            this.blockPos = blockEntity.getBlockPos();
+            this.controlPanelBlock = blockEntity;
+            this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
+            this.locked = blockEntity.isLocked();
+            this.craftingMode = blockEntity.getCraftingMode();
+            this.filter = blockEntity.getFilter();
+            this.sortType = blockEntity.getSortType();
+            this.panelItem = ItemStack.EMPTY;
+        }
 
         this.channel = ServerChannelManager.getInstance().getChannel(BlackHoleStorage.FAKE_PLAYER_UUID, 0);
         if (!channel.isRemoved()) ((ServerChannel) this.channel).addListener((ServerPlayer) player);
@@ -122,7 +142,23 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public boolean clickMenuButton(Player pPlayer, int pId) {
         switch (pId) {
             case 0 -> {
-                if (owner.equals(player.getUUID()) || owner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) locked = !locked;
+                if (owner.equals(player.getUUID()) || owner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
+                    locked = !locked;
+                    if (panelItemSlotIndex >= 0) {
+                        CompoundTag nbt = panelItem.getTag();
+                        //locked 的空值检测在物品上，保证到menu的不会空
+                        nbt.putBoolean("locked", locked);
+                        if (locked) {
+                            nbt.putBoolean("craftingMode", craftingMode);
+                            nbt.putString("filter", filter);
+                            nbt.putInt("sortType", sortType);
+                        }
+                        panelItem.setTag(nbt);
+                    } else {
+                        controlPanelBlock.setLocked(locked);
+                        if (locked) saveBlock();
+                    }
+                }
             }
             case 1 -> craftingMode = !craftingMode;
             case 2 -> nextSort();
@@ -349,6 +385,14 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         else sortType--;
         dummyContainer.refreshContainer(true);
     }
+
+    private void saveBlock() {
+        controlPanelBlock.setCraftingMode(craftingMode);
+        controlPanelBlock.setFilter(filter);
+        controlPanelBlock.setSortType(sortType);
+    }
+
+    private void saveItem() {}
 
     public class DummyContainer extends SimpleContainer {
         protected ArrayList<String> sortedItemNames = new ArrayList<>();
@@ -632,7 +676,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
             }
             //剩下的SWAP无视掉(hot bar的快捷键)
-        } else if (pMouseX != sourceSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
+        } else if (pMouseX != panelItemSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
     }
 
     @Override
@@ -688,8 +732,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return !controlPanelBlock.isRemoved() &&
-                !channel.isRemoved() &&
+        if (panelItemSlotIndex >= 0) return panelItem == player.getInventory().getItem(panelItemSlotIndex);
+        else return !controlPanelBlock.isRemoved() && !channel.isRemoved() &&
                 player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 16.0D;
     }
 
@@ -699,11 +743,18 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (!channel.isRemoved()) ((ServerChannel) channel).removeListener((ServerPlayer) player);
         super.removed(player);
         clearCraftSlots();
-        controlPanelBlock.setLocked(locked);
-        if (!locked) {
-            controlPanelBlock.setCraftingMode(craftingMode);
-            controlPanelBlock.setFilter(filter);
-            controlPanelBlock.setSortType(sortType);
+        if (panelItemSlotIndex >= 0) {
+            CompoundTag nbt = panelItem.getTag();
+            //locked 的空值检测在物品上，保证到menu的不会空
+            if (!nbt.getBoolean("locked")) {
+                nbt.putBoolean("locked", locked);
+                nbt.putBoolean("craftingMode", craftingMode);
+                nbt.putString("filter", filter);
+                nbt.putInt("sortType", sortType);
+                panelItem.setTag(nbt);
+            }
+        } else {
+            if (!controlPanelBlock.isLocked()) saveBlock();
         }
     }
 

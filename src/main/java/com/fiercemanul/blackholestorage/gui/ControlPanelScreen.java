@@ -316,6 +316,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         if (menu.owner.equals(menu.player.getUUID()) || menu.owner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
             this.menu.locked = !this.menu.locked;
             this.shortSearchBox.setFocus(false);
+            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
             this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
         }
     }
@@ -505,8 +506,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     @Override
     public void onClose() {
-        NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
-                new ControlPanelFilterPack(menu.containerId, menu.filter));
+        NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
         ((ClientChannel)menu.channel).removeListener();
         super.onClose();
     }
