@@ -7,6 +7,7 @@ import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PortableControlPanelItem;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -78,6 +79,9 @@ public class BlackHoleStorage {
     );
     public static final RegistryObject<Item>
             STORAGE_CORE = ITEMS.register("storage_core", () -> new Item(new Item.Properties().fireResistant().rarity(Rarity.EPIC).tab(CreativeModeTab.TAB_MISC))
+    );
+    public static final RegistryObject<Item>
+            FORGE_ENERGY = ITEMS.register("forge_energy", () -> new Item(new Item.Properties())
     );
 
     public static final RegistryObject<MenuType<ControlPanelMenu>>

@@ -13,60 +13,67 @@ import java.util.HashSet;
 
 public class ServerChannel extends Channel{
 
-    private HashSet<String> changedItems = new HashSet<>();
-    private boolean itemListChanged = false;
-    private HashSet<ServerPlayer> players = new HashSet<>();
+    private final HashSet<String> changedItems = new HashSet<>();
+    private final HashSet<String> changedFluids = new HashSet<>();
+    private final HashSet<String> changedEnergy = new HashSet<>();
+    private final HashSet<ServerPlayer> players = new HashSet<>();
     private boolean removed = false;
 
 
     public ServerChannel() {}
 
     public ServerChannel(CompoundTag dat) {
-        if (dat.contains("items")) {
-            CompoundTag items = dat.getCompound("items");
-            if (items.isEmpty()) return;
-            items.getAllKeys().forEach(itemId -> {
-                if (items.getInt(itemId) > 0 || ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
-                    storageItems.put(itemId, items.getInt(itemId));
-                }
-            });
-        }
+        initialize(dat);
     }
 
     @Override
     public void onItemChanged(String itemId, boolean listChanged) {
         changedItems.add(itemId);
-        itemListChanged = listChanged;
+    }
+
+    @Override
+    public void onFluidChanged(String fluidId, boolean listChanged) {
+        changedFluids.add(fluidId);
+    }
+
+    @Override
+    public void onEnergyChanged(String energyId, boolean listChanged) {
+        changedEnergy.add(energyId);
     }
 
     public void initialize(CompoundTag dat) {
         storageItems.clear();
         if (dat.contains("items")) {
             CompoundTag items = dat.getCompound("items");
-            if (items.isEmpty()) return;
             items.getAllKeys().forEach(itemId -> {
-                if (items.getInt(itemId) > 0 || ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
-                    storageItems.put(itemId, items.getInt(itemId));
+                if (items.getLong(itemId) > 0 && ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
+                    storageItems.put(itemId, items.getLong(itemId));
+                }
+            });
+        }
+        storageFluids.clear();
+        if (dat.contains("fluids")) {
+            CompoundTag fluids = dat.getCompound("fluids");
+            fluids.getAllKeys().forEach(fluidId -> {
+                if (fluids.getLong(fluidId) > 0 && ForgeRegistries.FLUIDS.containsKey(new ResourceLocation(fluidId))) {
+                    storageFluids.put(fluidId, fluids.getLong(fluidId));
+                }
+            });
+        }
+        storageEnergies.clear();
+        if (dat.contains("energies")) {
+            CompoundTag energies = dat.getCompound("energies");
+            energies.getAllKeys().forEach(energy -> {
+                if (energies.getLong(energy) > 0 && ForgeRegistries.ITEMS.containsKey(new ResourceLocation(energy))) {
+                    storageEnergies.put(energy, energies.getLong(energy));
                 }
             });
         }
     }
 
-    public CompoundTag getSaveData() {
-        CompoundTag items = new CompoundTag();
-        storageItems.forEach(items::putInt);
-        CompoundTag saveData = new CompoundTag();
-        saveData.put("items", items);
-        return saveData;
-    }
-
     public void addListener(ServerPlayer player) {
         players.add(player);
-        CompoundTag tag = new CompoundTag();
-        CompoundTag items = new CompoundTag();
-        storageItems.forEach(items::putInt);
-        tag.put("items", items);
-        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelPack(tag));
+        NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelPack(buildData()));
     }
 
     public void removeListener(ServerPlayer player) {
@@ -77,13 +84,21 @@ public class ServerChannel extends Channel{
         if (changedItems.isEmpty()) return;
         if (!players.isEmpty()) {
             CompoundTag tag = new CompoundTag();
+
             CompoundTag items = new CompoundTag();
-            changedItems.forEach(itemId -> items.putInt(itemId, storageItems.getOrDefault(itemId, 0)));
+            changedItems.forEach(itemId -> items.putLong(itemId, storageItems.getOrDefault(itemId, 0L)));
             tag.put("items", items);
+
+            CompoundTag fluids = new CompoundTag();
+            changedFluids.forEach(fluidId -> fluids.putLong(fluidId, storageFluids.getOrDefault(fluidId, 0L)));
+            tag.put("fluids", fluids);
+
+            CompoundTag energies = new CompoundTag();
+            changedEnergy.forEach(energyId -> energies.putLong(energyId, storageEnergies.getOrDefault(energyId, 0L)));
+            tag.put("energies", energies);
+
             ChannelUpdatePack pack = new ChannelUpdatePack(tag);
-            players.forEach(player -> {
-                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack);
-            });
+            players.forEach(player -> NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack));
         }
         changedItems.clear();
     }
@@ -91,16 +106,26 @@ public class ServerChannel extends Channel{
     public void sendFullUpdate() {
         if (changedItems.isEmpty()) return;
         if (!players.isEmpty()) {
-            CompoundTag tag = new CompoundTag();
-            CompoundTag items = new CompoundTag();
-            storageItems.forEach(items::putInt);
-            tag.put("items", items);
-            ChannelPack pack = new ChannelPack(tag);
+            ChannelPack pack = new ChannelPack(buildData());
             players.forEach(player -> {
                 NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack);
             });
         }
         changedItems.clear();
+    }
+
+    public CompoundTag buildData() {
+        CompoundTag items = new CompoundTag();
+        storageItems.forEach(items::putLong);
+        CompoundTag fluids = new CompoundTag();
+        storageFluids.forEach(fluids::putLong);
+        CompoundTag energies = new CompoundTag();
+        storageEnergies.forEach(energies::putLong);
+        CompoundTag data = new CompoundTag();
+        data.put("items", items);
+        data.put("fluids", fluids);
+        data.put("energies", energies);
+        return data;
     }
 
     public boolean isRemoved() {

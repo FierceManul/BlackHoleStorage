@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "X": {
+      "item": "blackholestorage:portable_control_panel"
+    }
+  },
+  "pattern": [
+    "X"
+  ],
+  "result": {
+    "item": "blackholestorage:control_panel"
+  }
+}

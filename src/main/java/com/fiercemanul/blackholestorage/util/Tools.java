@@ -1,13 +1,13 @@
 package com.fiercemanul.blackholestorage.util;
 
 import java.text.DecimalFormat;
-import java.util.Map;
+import java.util.HashMap;
 
 public class Tools {
 
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat(",###");
 
-    public static int sortItemFromCount(String s1, String s2, Map<String, Integer> storageItems, boolean reverseOrder) {
+    public static int sortFromCount(String s1, String s2, HashMap<String, Long> storageItems, boolean reverseOrder) {
         int i;
         if (reverseOrder) {
             i = storageItems.get(s2).compareTo(storageItems.get(s1));
@@ -18,7 +18,7 @@ public class Tools {
         return i;
     }
 
-    public static int sortItemFromRightID(String s1, String s2) {
+    public static int sortFromRightID(String s1, String s2) {
         int i = s1.indexOf(":");
         String a = s1.substring(i + 1);
         int j = s2.indexOf(":");
@@ -28,7 +28,7 @@ public class Tools {
         return k;
     }
 
-    public static int sortItemFromMirrorID(String s1, String s2) {
+    public static int sortFromMirrorID(String s1, String s2) {
         char[] a = s1.toCharArray();
         char[] b = s2.toCharArray();
         int j = a.length - 1;

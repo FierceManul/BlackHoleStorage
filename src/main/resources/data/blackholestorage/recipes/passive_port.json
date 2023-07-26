@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": {
+      "item": "minecraft:netherite_block"
+    },
+    "X": {
+      "item": "minecraft:chest"
+    },
+    "O": {
+      "item": "blackholestorage:core"
+    }
+  },
+  "pattern": [
+    "#X#",
+    "XOX",
+    "#X#"
+  ],
+  "result": {
+    "item": "blackholestorage:passive_port"
+  }
+}

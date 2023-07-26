@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "X": {
+      "item": "minecraft:tinted_glass"
+    },
+    "A": {
+      "item": "minecraft:glowstone_dust"
+    },
+    "B": {
+      "item": "minecraft:crafting_table"
+    },
+    "C": {
+      "item": "minecraft:gold_ingot"
+    },
+    "O": {
+      "item": "blackholestorage:core"
+    }
+  },
+  "pattern": [
+    "AXA",
+    "BOC",
+    "###"
+  ],
+  "result": {
+    "item": "blackholestorage:control_panel"
+  }
+}

@@ -15,7 +15,8 @@ public class ControlPanelBlockEntity extends BlockEntity {
     private boolean locked = false;
     private boolean craftingMode = false;
     private String filter = "";
-    private int sortType = 4;
+    private byte sortType = 4;
+    private byte viewType = 0;
 
 
     public ControlPanelBlockEntity(BlockPos pos, BlockState state) {
@@ -33,7 +34,8 @@ public class ControlPanelBlockEntity extends BlockEntity {
         }
         if (pTag.contains("craftingMode")) craftingMode = pTag.getBoolean("craftingMode");
         if (pTag.contains("filter")) filter = pTag.getString("filter");
-        if (pTag.contains("sortType")) sortType = pTag.getInt("sortType");
+        if (pTag.contains("sortType")) sortType = pTag.getByte("sortType");
+        if (pTag.contains("viewType")) viewType = pTag.getByte("viewType");
     }
 
     @Override
@@ -44,7 +46,8 @@ public class ControlPanelBlockEntity extends BlockEntity {
         }
         pTag.putBoolean("craftingMode", craftingMode);
         pTag.putString("filter", filter);
-        pTag.putInt("sortType", sortType);
+        pTag.putByte("sortType", sortType);
+        pTag.putByte("viewType", viewType);
     }
 
 
@@ -64,8 +67,12 @@ public class ControlPanelBlockEntity extends BlockEntity {
         return filter;
     }
 
-    public int getSortType() {
+    public byte getSortType() {
         return sortType;
+    }
+
+    public byte getViewType() {
+        return viewType;
     }
 
     public void setOwner(UUID owner) {
@@ -88,8 +95,13 @@ public class ControlPanelBlockEntity extends BlockEntity {
         this.setChanged();
     }
 
-    public void setSortType(int sortType) {
+    public void setSortType(byte sortType) {
         this.sortType = sortType;
+        this.setChanged();
+    }
+
+    public void setViewType(byte viewType) {
+        this.viewType = viewType;
         this.setChanged();
     }
 }

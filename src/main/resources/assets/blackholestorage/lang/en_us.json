@@ -5,6 +5,7 @@
     "item.blackholestorage.portable_control_panel": "Portable Control Panel",
     "item.blackholestorage.core": "Black Hole Logic Core",
     "item.blackholestorage.storage_core": "Black Hole Storage Core",
+    "item.blackholestorage.forge_energy": "Energy (FE)",
     "screen.bhs.control_panel": "",
     "bhs.GUI.line": "---------------------",
     "bhs.GUI.owner": "Owner: %d",
@@ -20,5 +21,8 @@
     "bhs.GUI.sort.mirror_id": "Sort : §aMirror ID",
     "bhs.GUI.sort.count": "Sort : §aCount",
     "bhs.GUI.sort.tip1": "§aLMB§r : Cycle sort type",
-    "bhs.GUI.sort.tip2": "§dLSHIFT§r + §aLMB§r : Switch ascending"
+    "bhs.GUI.sort.tip2": "§dLSHIFT§r + §aLMB§r : Switch ascending",
+    "bhs.GUI.capability.tip1": "§aLMB§r : Input 1 stack %d to carried",
+    "bhs.GUI.capability.tip2": "§aRMB§r : Output 1 stack object from carried",
+    "bhs.GUI.capability.tip3": "§dLSHIFT§r : Full it !"
 }

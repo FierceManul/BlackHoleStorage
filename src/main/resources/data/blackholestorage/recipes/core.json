@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "#": {
+      "item": "minecraft:nether_star"
+    },
+    "X": {
+      "item": "minecraft:comparator"
+    },
+    "O": {
+      "item": "minecraft:ender_eye"
+    }
+  },
+  "pattern": [
+    "X#X",
+    "#O#",
+    "X#X"
+  ],
+  "result": {
+    "item": "blackholestorage:core"
+  }
+}

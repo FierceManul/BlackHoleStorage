@@ -1,6 +1,7 @@
 package com.fiercemanul.blackholestorage.channel;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
+import com.fiercemanul.blackholestorage.Config;
 import com.fiercemanul.blackholestorage.network.NameCachePack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import net.minecraft.nbt.CompoundTag;
@@ -72,8 +73,8 @@ public class ServerChannelManager {
     public void onTick(TickEvent.ServerTickEvent event) {
         int tickCount = event.getServer().getTickCount();
         if (channel == null) return;
-        if (tickCount % 40 == 0) channel.sendFullUpdate();
-        else channel.sendUpdate();
+        if (tickCount % Config.CHANNEL_FULL_UPDATE_RATE.get() == 0) channel.sendFullUpdate();
+        else if (tickCount % Config.CHANNEL_FAST_UPDATE_RATE.get() == 0) channel.sendUpdate();
     }
 
     @SubscribeEvent
@@ -127,7 +128,7 @@ public class ServerChannelManager {
 
             File channelFile = new File(saveDataPath, "Channel.dat");
             if (!channelFile.exists()) channelFile.createNewFile();
-            NbtIo.writeCompressed(this.channel.getSaveData(), channelFile);
+            NbtIo.writeCompressed(this.channel.buildData(), channelFile);
 
         } catch (Exception e) {
             throw new RuntimeException("BlackHoleStorage was unable to save it's data!", e);

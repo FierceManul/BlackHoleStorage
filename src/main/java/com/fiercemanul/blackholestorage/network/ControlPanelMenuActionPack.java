@@ -12,28 +12,28 @@ public class ControlPanelMenuActionPack {
 
     private final int containerId;
     private final int actionId;
-    private final String itemId;
-    private final int count;
+    private final String type;
+    private final String id;
 
     public ControlPanelMenuActionPack(FriendlyByteBuf buf) {
         this.containerId = buf.readInt();
         this.actionId = buf.readInt();
-        this.itemId = buf.readUtf();
-        this.count = buf.readInt();
+        this.type = buf.readUtf();
+        this.id = buf.readUtf();
     }
 
-    public ControlPanelMenuActionPack(int containerId, int actionId, String itemId, int count) {
+    public ControlPanelMenuActionPack(int containerId, int actionId, String[] object) {
         this.containerId = containerId;
         this.actionId = actionId;
-        this.itemId = itemId;
-        this.count = count;
+        this.type = object[0];
+        this.id = object[1];
     }
 
     public void makePack(FriendlyByteBuf buf) {
         buf.writeInt(containerId);
         buf.writeInt(actionId);
-        buf.writeUtf(itemId);
-        buf.writeInt(count);
+        buf.writeUtf(type);
+        buf.writeUtf(id);
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
@@ -44,7 +44,7 @@ public class ControlPanelMenuActionPack {
                 if (!player.containerMenu.stillValid(player)) {
                     BlackHoleStorage.LOGGER.debug("Player {} interacted with invalid menu {}", player, player.containerMenu);
                 } else {
-                    ((ControlPanelMenu) player.containerMenu).action(actionId, itemId, count);
+                    ((ControlPanelMenu) player.containerMenu).action(actionId, type, id);
                     player.containerMenu.broadcastChanges();
                 }
             }

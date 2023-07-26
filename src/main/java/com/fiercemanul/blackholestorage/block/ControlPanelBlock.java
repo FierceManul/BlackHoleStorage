@@ -143,7 +143,8 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                     buf.writeBoolean(controlPanelBlockEntity.isLocked());
                     buf.writeBoolean(controlPanelBlockEntity.getCraftingMode());
                     buf.writeUtf(controlPanelBlockEntity.getFilter(), 64);
-                    buf.writeInt(controlPanelBlockEntity.getSortType());
+                    buf.writeByte(controlPanelBlockEntity.getSortType());
+                    buf.writeByte(controlPanelBlockEntity.getViewType());
                 });
             }
         }

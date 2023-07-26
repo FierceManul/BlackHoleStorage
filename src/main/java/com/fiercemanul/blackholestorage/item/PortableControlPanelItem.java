@@ -32,7 +32,8 @@ public class PortableControlPanelItem extends Item {
             if (!nbt.contains("locked")) nbt.putBoolean("locked", false);
             if (!nbt.contains("craftingMode")) nbt.putBoolean("craftingMode", false);
             if (!nbt.contains("filter")) nbt.putString("filter", "");
-            if (!nbt.contains("sortType")) nbt.putInt("sortType", 4);
+            if (!nbt.contains("sortType")) nbt.putByte("sortType", (byte) 4);
+            if (!nbt.contains("viewType")) nbt.putByte("viewType", (byte) 0);
 
             MenuProvider containerProvider = new MenuProvider() {
 
@@ -54,7 +55,8 @@ public class PortableControlPanelItem extends Item {
                 buf.writeBoolean(nbt.getBoolean("locked"));
                 buf.writeBoolean(nbt.getBoolean("craftingMode"));
                 buf.writeUtf(nbt.getString("filter"));
-                buf.writeInt(nbt.getInt("sortType"));
+                buf.writeByte(nbt.getByte("sortType"));
+                buf.writeByte(nbt.getByte("viewType"));
             });
 
         }

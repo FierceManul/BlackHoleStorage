@@ -79,11 +79,11 @@ public class ClientChannelManager {
         return channel;
     }
 
-    public void updateChannel(CompoundTag items) {
-        channel.updateItems(items);
+    public void updateChannel(CompoundTag data) {
+        channel.update(data);
     }
 
-    public void fullUpdateChannel(CompoundTag items) {
-        channel.fullUpdateItems(items);
+    public void fullUpdateChannel(CompoundTag data) {
+        channel.fullUpdate(data);
     }
 }
