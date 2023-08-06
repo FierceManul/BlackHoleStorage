@@ -1,0 +1,63 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "blackholestorage:control_panel",
+          "functions": [
+            {
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "owner",
+                  "target": "BlockEntityTag.owner",
+                  "op": "replace"
+                },
+                {
+                  "source": "locked",
+                  "target": "BlockEntityTag.locked",
+                  "op": "replace"
+                },
+                {
+                  "source": "craftingMode",
+                  "target": "BlockEntityTag.craftingMode",
+                  "op": "replace"
+                },
+                {
+                  "source": "filter",
+                  "target": "BlockEntityTag.filter",
+                  "op": "replace"
+                },
+                {
+                  "source": "sortType",
+                  "target": "BlockEntityTag.sortType",
+                  "op": "replace"
+                },
+                {
+                  "source": "viewType",
+                  "target": "BlockEntityTag.viewType",
+                  "op": "replace"
+                },
+                {
+                  "source": "channel",
+                  "target": "BlockEntityTag.channel",
+                  "op": "replace"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

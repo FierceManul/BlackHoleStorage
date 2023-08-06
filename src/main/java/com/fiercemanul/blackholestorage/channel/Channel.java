@@ -10,13 +10,13 @@ import java.util.HashMap;
 
 public abstract class Channel {
 
+    private String channelName = "UnName";
     public final HashMap<String, Long> storageItems = new HashMap<>();
     public final HashMap<String, Long> storageFluids = new HashMap<>();
     public final HashMap<String, Long> storageEnergies = new HashMap<>();
     public int maxStorageSize = Config.MAX_SIZE_PRE_CHANNEL.get();
 
-    public Channel() {
-    }
+    public Channel() {}
 
     public abstract void onItemChanged(String itemId, boolean listChanged);
 
@@ -362,5 +362,17 @@ public abstract class Channel {
         }
     }
 
+    public boolean isEmpty() {
+        return storageItems.isEmpty() && storageFluids.isEmpty() && storageEnergies.isEmpty();
+    }
+
     public abstract boolean isRemoved();
+
+    public String getName() {
+        return channelName;
+    }
+
+    public void setName(String channelName) {
+        this.channelName = channelName.substring(0, Math.min(channelName.length(), 64));
+    }
 }

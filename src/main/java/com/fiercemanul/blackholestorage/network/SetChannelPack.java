@@ -1,39 +1,35 @@
 package com.fiercemanul.blackholestorage.network;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
-import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
+import com.fiercemanul.blackholestorage.gui.ChannelSelectMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class ControlPanelMenuActionPack {
+public class SetChannelPack {
 
     private final int containerId;
-    private final int actionId;
-    private final String type;
-    private final String id;
+    private final byte type;
+    private final int id;
 
-    public ControlPanelMenuActionPack(FriendlyByteBuf buf) {
+    public SetChannelPack(FriendlyByteBuf buf) {
         this.containerId = buf.readInt();
-        this.actionId = buf.readInt();
-        this.type = buf.readUtf();
-        this.id = buf.readUtf();
+        this.type = buf.readByte();
+        this.id = buf.readInt();
     }
 
-    public ControlPanelMenuActionPack(int containerId, int actionId, String[] object) {
+    public SetChannelPack(int containerId, byte type, int id) {
         this.containerId = containerId;
-        this.actionId = actionId;
-        this.type = object[0];
-        this.id = object[1];
+        this.type = type;
+        this.id = id;
     }
 
     public void makePack(FriendlyByteBuf buf) {
         buf.writeInt(containerId);
-        buf.writeInt(actionId);
-        buf.writeUtf(type);
-        buf.writeUtf(id);
+        buf.writeByte(type);
+        buf.writeInt(id);
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
@@ -44,8 +40,7 @@ public class ControlPanelMenuActionPack {
             if (!player.containerMenu.stillValid(player)) {
                 BlackHoleStorage.LOGGER.debug("Player {} interacted with invalid menu {}", player, player.containerMenu);
             } else {
-                ((ControlPanelMenu) player.containerMenu).action(actionId, type, id);
-                player.containerMenu.broadcastChanges();
+                ((ChannelSelectMenu) player.containerMenu).setChannel(type, id);
             }
         });
         context.get().setPacketHandled(true);

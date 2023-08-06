@@ -33,6 +33,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.wrappers.FluidBucketWrapper;
+import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -57,6 +58,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public final UUID owner;
     public boolean locked;
     public UUID channelOwner;
+    public int channelID;
     public boolean craftingMode;
     public String filter;
     public byte sortType = 0;
@@ -79,6 +81,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.filter = extraData.readUtf(64);
         this.sortType = extraData.readByte();
         this.viewType = extraData.readByte();
+        this.channelOwner = extraData.readUUID();
+        this.channelID = extraData.readInt();
 
         if (panelItemSlotIndex >= 0) this.panelItem = player.getInventory().getItem(panelItemSlotIndex);
         else this.panelItem = ItemStack.EMPTY;
@@ -123,6 +127,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             this.filter = nbt.getString("filter");
             this.sortType = nbt.getByte("sortType");
             this.viewType = nbt.getByte("viewType");
+            CompoundTag channel = nbt.getCompound("channel");
+            if (!channel.isEmpty()) {
+                this.channelOwner = channel.getUUID("channelOwner");
+                this.channelID = channel.getInt("channelID");
+            }
         } else {
             this.blockPos = blockEntity.getBlockPos();
             this.controlPanelBlock = blockEntity;
@@ -132,20 +141,22 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             this.filter = blockEntity.getFilter();
             this.sortType = blockEntity.getSortType();
             this.viewType = blockEntity.getViewType();
+            this.channelOwner = blockEntity.getChannelOwner();
+            this.channelID = blockEntity.getChannelID();
             this.panelItem = ItemStack.EMPTY;
         }
 
-        this.channel = ServerChannelManager.getInstance().getChannel(BlackHoleStorage.FAKE_PLAYER_UUID, 0);
+        this.channel = ServerChannelManager.getInstance().getChannel(channelOwner, channelID);
         if (!channel.isRemoved()) ((ServerChannel) this.channel).addListener((ServerPlayer) player);
 
         addSlots(player, player.getInventory());
     }
 
-    @Override
+    /*@Override
     public void initializeContents(int pStateId, List<ItemStack> pItems, ItemStack pCarried) {
         super.initializeContents(pStateId, pItems, pCarried);
         if (level.isClientSide) dummyContainer.refreshContainer(true);
-    }
+    }*/
 
     //按钮相关
     @Override
@@ -174,9 +185,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             case 2 -> nextSort();
             case 3 -> reverseSort();
             case 4 -> changeViewType();
-
+            case 5 -> openChannelScreen();
         }
-        return pId < 2;
+        return pId < 5;
     }
 
 
@@ -260,14 +271,15 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         break;
                     }
                 });
-                else if (type.equals("energy") && id.equals("blackholestorage:forge_energy")) carried.getCapability(ForgeCapabilities.ENERGY).ifPresent(iEnergyStorage -> {
-                    if (!iEnergyStorage.canReceive() || channel.getStorageEnergy() == 0) return;
-                    int maxInputAmount = (int) Math.min(1000000, channel.getStorageEnergy());
-                    int receiveEnergy = iEnergyStorage.receiveEnergy(maxInputAmount, false);
-                    if (receiveEnergy == 0) return;
-                    channel.removeEnergy((long) receiveEnergy);
-                    canal.set(true);
-                });
+                else if (type.equals("energy") && id.equals("blackholestorage:forge_energy"))
+                    carried.getCapability(ForgeCapabilities.ENERGY).ifPresent(iEnergyStorage -> {
+                        if (!iEnergyStorage.canReceive() || channel.getStorageEnergy() == 0) return;
+                        int maxInputAmount = (int) Math.min(1000000, channel.getStorageEnergy());
+                        int receiveEnergy = iEnergyStorage.receiveEnergy(maxInputAmount, false);
+                        if (receiveEnergy == 0) return;
+                        channel.removeEnergy((long) receiveEnergy);
+                        canal.set(true);
+                    });
                 else if (type.equals("item")) carried.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(iItemHandler -> {
                     if (!channel.storageItems.containsKey(id)) return;
                     int slots = iItemHandler.getSlots();
@@ -283,7 +295,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         int markAmount = transmitAmount;
                         tryInsertItem.setCount(transmitAmount);
                         for (int j = 0; j < 64; j++) {
-                            ItemStack remainingItem = iItemHandler.insertItem(i, tryInsertItem,false);
+                            ItemStack remainingItem = iItemHandler.insertItem(i, tryInsertItem, false);
                             transmitAmount = remainingItem.getCount();
                             if (transmitAmount <= 0) break;
                             tryInsertItem.setCount(transmitAmount);
@@ -327,7 +339,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 int tanks = iFluidHandlerItem.getTanks();
                 for (int i = 0; i < tanks; i++) {
                     FluidStack fluidStack = iFluidHandlerItem.getFluidInTank(i);
-                    if (fluidStack.isEmpty()) continue;
+                    if (fluidStack.isEmpty() || fluidStack.hasTag()) continue;
                     long j = channel.canStoredAmount(fluidStack);
                     if (j == 0) continue;
                     FluidStack resultFluidStack = iFluidHandlerItem.drain((int) Math.min(FluidType.BUCKET_VOLUME, j), IFluidHandler.FluidAction.EXECUTE);
@@ -441,23 +453,24 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         return;
                     }
                 });
-                //但电不需要防败家，因为不缺嘿嘿嘿。
-                else if (type.equals("energy") && id.equals("blackholestorage:forge_energy")) carried.getCapability(ForgeCapabilities.ENERGY).ifPresent(iEnergyStorage -> {
-                    if (!iEnergyStorage.canReceive() || channel.getStorageEnergy() == 0) return;
-                    int maxInputAmount = (int) Math.min(Integer.MAX_VALUE, channel.getStorageEnergy());
-                    int markAmount = maxInputAmount;
-                    for (int i = 0; i < 1024; i++) {
-                        int receiveEnergy = iEnergyStorage.receiveEnergy(maxInputAmount, false);
-                        if (receiveEnergy == 0) break;
-                        maxInputAmount -= receiveEnergy;
-                        if (maxInputAmount == 0) break;
-                    }
-                    markAmount -= maxInputAmount;
-                    if (markAmount > 0) {
-                        channel.removeEnergy((long) markAmount);
-                        canal.set(true);
-                    }
-                });
+                    //但电不需要防败家，因为不缺嘿嘿嘿。
+                else if (type.equals("energy") && id.equals("blackholestorage:forge_energy"))
+                    carried.getCapability(ForgeCapabilities.ENERGY).ifPresent(iEnergyStorage -> {
+                        if (!iEnergyStorage.canReceive() || channel.getStorageEnergy() == 0) return;
+                        int maxInputAmount = (int) Math.min(Integer.MAX_VALUE, channel.getStorageEnergy());
+                        int markAmount = maxInputAmount;
+                        for (int i = 0; i < 1024; i++) {
+                            int receiveEnergy = iEnergyStorage.receiveEnergy(maxInputAmount, false);
+                            if (receiveEnergy == 0) break;
+                            maxInputAmount -= receiveEnergy;
+                            if (maxInputAmount == 0) break;
+                        }
+                        markAmount -= maxInputAmount;
+                        if (markAmount > 0) {
+                            channel.removeEnergy((long) markAmount);
+                            canal.set(true);
+                        }
+                    });
                 else if (type.equals("item")) carried.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(iItemHandler -> {
                     if (!channel.storageItems.containsKey(id)) return;
                     int transmitAmount = (int) Math.min(Integer.MAX_VALUE, channel.storageItems.get(id) / 2);
@@ -468,7 +481,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     int slots = iItemHandler.getSlots();
                     for (int i = 0; i < slots; i++) {
                         for (int j = 0; j < 64; j++) {
-                            ItemStack remainingItem = iItemHandler.insertItem(i, tryInsertItem,false);
+                            ItemStack remainingItem = iItemHandler.insertItem(i, tryInsertItem, false);
                             if (remainingItem.getCount() == transmitAmount) break;
                             transmitAmount = remainingItem.getCount();
                             if (transmitAmount <= 0) break;
@@ -521,8 +534,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             carried.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(iFluidHandlerItem -> {
                 int tanks = iFluidHandlerItem.getTanks();
                 for (int i = 0; i < tanks; i++) {
-                    if (iFluidHandlerItem.getFluidInTank(i).isEmpty()) continue;
-                    String fluidId = ForgeRegistries.FLUIDS.getKey(iFluidHandlerItem.getFluidInTank(i).getFluid()).toString();
+                    FluidStack inTankFluid = iFluidHandlerItem.getFluidInTank(i);
+                    if (inTankFluid.isEmpty() || inTankFluid.hasTag()) continue;
+                    String fluidId = ForgeRegistries.FLUIDS.getKey(inTankFluid.getFluid()).toString();
                     int maxRemoveAmount = channel.canStoredFluid(fluidId);
                     int markAmount = maxRemoveAmount;
                     //规避限速，最大循环1024次，防止过度循环。
@@ -740,13 +754,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public void nextSort() {
         sortType += 2;
         if (sortType > 7) sortType %= 8;
-        dummyContainer.refreshContainer(true);
+        if (level.isClientSide) dummyContainer.refreshContainer(true);
     }
 
     public void reverseSort() {
         if (sortType % 2 == 0) sortType++;
         else sortType--;
-        dummyContainer.refreshContainer(true);
+        if (level.isClientSide) dummyContainer.refreshContainer(true);
     }
 
     public static class ViewType {
@@ -797,15 +811,19 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     sortedEnergies.forEach(s -> sortedObject.add(new String[]{"energy", s}));
                 }
             }
-            scrollTo(0);
+            scrollOffset(0);
         }
 
         public void onScrollTo(double scrollTo) {
             this.scrollTo = scrollTo;
-            scrollTo(0);
+            scrollOffset(0);
         }
 
-        public void scrollTo(int offset) {
+        public double getScrollOn() {
+            return scrollTo;
+        }
+
+        public void scrollOffset(int offset) {
             if (sortedObject.size() <= (craftingMode ? 77 : 99)) {
                 viewingObject.clear();
                 viewingObject.addAll(sortedObject);
@@ -825,13 +843,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
 
         public double onMouseScrolled(boolean isUp) {
-            if (isUp) scrollTo(-1);
-            else scrollTo(1);
+            if (isUp) scrollOffset(-1);
+            else scrollOffset(1);
             return scrollTo;
         }
 
         public void refreshContainer(boolean fullUpdate) {
-            if (!level.isClientSide || channel.getChannelSize() == 0) return;
+            if (!level.isClientSide) return;
             if ((fullUpdate || sortType >= 6) && !LShifting) {
                 sortedItems = new ArrayList<>(channel.storageItems.keySet());
                 sortedFluids = new ArrayList<>(channel.storageFluids.keySet());
@@ -929,7 +947,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     }
                 }
                 onChangeViewType();
-                scrollTo(0);
                 return;
             }
             updateDummySlots();
@@ -1213,11 +1230,20 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 nbt.putString("filter", filter);
                 nbt.putByte("sortType", sortType);
                 nbt.putByte("viewType", viewType);
+                if (channel.isRemoved()) nbt.remove("channel");
                 panelItem.setTag(nbt);
             }
         } else {
             if (!controlPanelBlock.isLocked()) saveBlock();
         }
+    }
+
+    private void openChannelScreen() {
+        if (locked) return;
+        if (panelItemSlotIndex >= 0)
+            NetworkHooks.openScreen((ServerPlayer) player,
+                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex)), buf -> {});
+        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock), buf -> {});
     }
 
 
@@ -1233,7 +1259,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     itemstack = craftingrecipe.assemble(craftingContainer);
                 }
             }
-
             resultContainer.setItem(50, itemstack);
             menu.setRemoteSlot(50, itemstack);
             serverplayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 50, itemstack));

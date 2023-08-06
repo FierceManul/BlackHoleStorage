@@ -12,16 +12,13 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -41,14 +38,14 @@ import java.util.UUID;
 @OnlyIn(Dist.CLIENT)
 public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu> {
 
-    public static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/control_panel.png");
-    public int imageWidth = 202;
-    public int imageHeight = 249;
-    public final String ownerName;
+    private static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/control_panel.png");
+    public final int imageWidth = 202;
+    public final int imageHeight = 249;
+    private final String ownerName;
     private String[] lastHoveredObject = new String[2];
     private long lastCount = 0;
     private String lastFormatCountTemp = "";
-    private final ItemScrollBar scrollBar = new ItemScrollBar(193, 6, 4, 152);
+    private ItemScrollBar scrollBar;
     private EditBox shortSearchBox;
     private EditBox longSearchBox;
 
@@ -62,8 +59,12 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         super.init();
         this.leftPos = (this.width - imageWidth + 4) / 2;
         this.topPos = (this.height - imageHeight) / 2;
+        this.scrollBar = new ItemScrollBar(leftPos + 193, topPos + 6, 4, menu.craftingMode ? 118 : 152);
+        this.scrollBar.setScrolledOn(menu.dummyContainer.getScrollOn());
+        this.addRenderableWidget(scrollBar);
         this.addRenderableWidget(new ToggleCraftingButton(this.leftPos + 142, this.topPos + 163));
         this.addRenderableWidget(new ToggleLockButton(this.leftPos + 177, this.topPos + 210));
+        this.addRenderableWidget(new ChannelButton(this.leftPos +177, this.topPos + 193));
         this.addRenderableWidget(new SortButton(this.leftPos + 177, this.topPos + 176));
         this.addRenderableWidget(new ViewTypeButton(this.leftPos + 177, this.topPos + 159));
         this.shortSearchBox = new EditBox(this.font, leftPos + 75, topPos + 126, 59, 9, Component.translatable("bhs.GUI.search"));
@@ -78,6 +79,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.longSearchBox.setValue(menu.filter);
         this.addRenderableWidget(shortSearchBox);
         this.addRenderableWidget(longSearchBox);
+        menu.dummyContainer.refreshContainer(true);
     }
 
     @Override
@@ -85,10 +87,8 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.renderBackground(poseStack);
         super.render(poseStack, mouseX, mouseY, partialTicks);
         this.renderFluids(poseStack);
-        this.scrollBar.render(poseStack);
         this.renderDummyCount(poseStack);
         this.renderTooltip(poseStack, mouseX, mouseY);
-
     }
 
     @Override
@@ -96,10 +96,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         RenderSystem.setShaderTexture(0, GUI_IMG);
         this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 6);
         if (this.menu.craftingMode) {
-            for (int i = 0; i < 6; i++) {
-                this.blit(stack, this.leftPos, this.topPos + 6 + i * 17, 0, 6, imageWidth, 17);
-            }
-            this.blit(stack, this.leftPos, this.topPos + 108, 0, 40, imageWidth, 141);
+            this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 56);
+            this.blit(stack, this.leftPos, this.topPos + 56, 0, 22, imageWidth, 34);
+            this.blit(stack, this.leftPos, this.topPos + 90, 0, 22, imageWidth, 159);
 
             Slot helmetSlot = this.menu.slots.get(36);
             if (helmetSlot.isActive() && helmetSlot.getItem().isEmpty()) {
@@ -123,13 +122,11 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             }
 
         } else {
-            for (int i = 0; i < 8; i++) {
-                this.blit(stack, this.leftPos, this.topPos + 6 + i * 17, 0, 6, imageWidth, 17);
-            }
-            this.blit(stack, this.leftPos, this.topPos + 142, 0, 40, imageWidth, 17);
-            this.blit(stack, this.leftPos, this.topPos + 159, 0, 182, imageWidth, 16);
+            this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 57);
+            this.blit(stack, this.leftPos, this.topPos + 57, 0, 6, imageWidth, 51);
+            this.blit(stack, this.leftPos, this.topPos + 108, 0, 6, imageWidth, 50);
+            this.blit(stack, this.leftPos, this.topPos + 158, 0, 181, imageWidth, 17);
             this.blit(stack, this.leftPos, this.topPos + 175, 0, 107, imageWidth, 74);
-
         }
     }
 
@@ -147,29 +144,17 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         for (int i = 0; i < menu.dummyContainer.formatCount.size(); i++) {
             Slot slot = menu.slots.get(i + 51);
             String count = menu.dummyContainer.formatCount.get(i);
-
             this.setBlitOffset(100);
             RenderSystem.enableDepthTest();
-
             float fontSize = 0.5F;
             poseStack.pushPose();
             poseStack.translate(leftPos + slot.x, topPos + slot.y, 300.0D);
             poseStack.scale(fontSize, fontSize, 1.0F);
-            MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-            this.font.drawInBatch(
-                    count,
+            this.font.draw(poseStack, count,
                     (16 - this.font.width(count) * fontSize) / fontSize,
                     (16 - this.font.lineHeight * fontSize) / fontSize,
-                    16777215,
-                    false,
-                    poseStack.last().pose(),
-                    bufferSource,
-                    false,
-                    0,
-                    15728880);
-            bufferSource.endBatch();
+                    16777215);
             poseStack.popPose();
-
             this.setBlitOffset(0);
         }
     }
@@ -254,8 +239,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
-    protected void renderLabels(PoseStack stack, int i, int j) {
-    }
+    protected void renderLabels(PoseStack stack, int i, int j) {}
 
     /**
      * 加这一步按钮ToolTip才能渲染多行本文，我不知道为什么，反正他就是可以。
@@ -273,12 +257,6 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
-        if (pButton == 0) {
-            if (scrollBar.isInside(pMouseX, pMouseY) && scrollBar.canScroll()) {
-                scrollBar.scrolling = true;
-                scrollBar.onmMouseDraggedOn(pMouseY);
-            }
-        }
         if (pButton == 1) {
             //短搜索框
             if (pMouseX >= leftPos + 74 && pMouseX <= leftPos + 141 && pMouseY >= topPos + 125 && pMouseY <= topPos + 135) {
@@ -300,15 +278,13 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     @Override
     public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
-        if (scrollBar.scrolling) {
-            scrollBar.onmMouseDraggedOn(pMouseY);
-        }
+        if (scrollBar.isScrolling()) scrollBar.mouseDragged(pMouseX, pMouseY, pButton, pDragX, pDragY);
         return super.mouseDragged(pMouseX, pMouseY, pButton, pDragX, pDragY);
     }
 
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
-        scrollBar.scrolling = false;
+        scrollBar.mouseReleased(pMouseX, pMouseY, pButton);
         return super.mouseReleased(pMouseX, pMouseY, pButton);
     }
 
@@ -385,6 +361,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.longSearchBox.setFocus(false);
         this.longSearchBox.setVisible(!menu.craftingMode);
         this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 1);
+        scrollBar.setHeight(menu.craftingMode ? 118 : 152);
         scrollBar.setScrollTagSize();
     }
 
@@ -413,9 +390,12 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         };
     }
 
-    private class ItemScrollBar extends ScrollBar {
+    private void channelButtonPress() {
+        minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 5);
+    }
 
-        private final int scrollBarTagColor = FastColor.ARGB32.color(255, 77, 73, 77);
+    private class ItemScrollBar extends SimpleScrollBar {
+
         private int lastObjectListSize;
 
         public ItemScrollBar(int x, int y, int weight, int height) {
@@ -424,58 +404,22 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             this.lastObjectListSize = menu.dummyContainer.sortedObject.size();
         }
 
-        public int getHeight() {
-            return menu.craftingMode ? 118 : 152;
-        }
-
         public void setScrollTagSize() {
-            double v = (double) getHeight() * ((menu.craftingMode ? 7.0D : 9.0D) / Math.ceil(menu.dummyContainer.sortedObject.size() / 11.0D));
+            double v = (double) this.height * ((menu.craftingMode ? 7.0D : 9.0D) / Math.ceil(menu.dummyContainer.sortedObject.size() / 11.0D));
             this.setScrollTagSize(v);
         }
 
         @Override
-        public void setScrollTagSize(double scrollTagSize) {
-            this.scrollTagSize = Math.max(weight, Math.min(getHeight(), scrollTagSize));
-        }
-
-        @Override
-        public boolean canScroll() {
-            return scrollTagSize < getHeight();
-        }
-
-        public boolean isInside(double mouseX, double mouseY) {
-            int xStar = leftPos + x;
-            int yStar = topPos + y;
-            int xEnd = xStar + weight;
-            int yEnd = yStar + getHeight();
-            return mouseX >= xStar && mouseY >= yStar && mouseX <= xEnd && mouseY <= yEnd;
-        }
-
-        @Override
-        public void onmMouseDraggedOn(double mouseY) {
-            if (mouseY <= topPos + y) {
-                scrolledOn = 0.0D;
-            } else if (mouseY >= topPos + y + getHeight()) {
-                scrolledOn = 1.0D;
-            } else {
-                double v = (mouseY - topPos - y - (scrollTagSize / 2)) / (getHeight() - scrollTagSize);
-                setScrolledOn(v);
-            }
+        public void draggedTo(double scrolledOn) {
             menu.dummyContainer.onScrollTo(scrolledOn);
         }
 
-        public void render(PoseStack poseStack) {
+        @Override
+        public void beforeRender() {
             if (menu.dummyContainer.sortedObject.size() != lastObjectListSize) {
                 setScrollTagSize();
                 this.lastObjectListSize = menu.dummyContainer.sortedObject.size();
             }
-            double v = topPos + y + ((getHeight() - scrollTagSize) * scrolledOn);
-            fill(poseStack,
-                    leftPos + x,
-                    (int) Math.floor(v),
-                    leftPos + x + weight,
-                    (int) Math.ceil(v + scrollTagSize),
-                    scrollBarTagColor);
         }
     }
 
@@ -489,9 +433,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
+            RenderSystem.enableDepthTest();
             int uOffset = menu.craftingMode ? 96 : 80;
             int vOffset = this.isHoveredOrFocused() ? 207 : 199;
-            RenderSystem.enableDepthTest();
             blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
     }
@@ -506,9 +450,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
+            RenderSystem.enableDepthTest();
             int uOffset = menu.locked ? 86 : 67;
             int vOffset = this.isHoveredOrFocused() ? 231 : 215;
-            RenderSystem.enableDepthTest();
             blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
@@ -539,9 +483,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
+            RenderSystem.enableDepthTest();
             int uOffset = this.isHoveredOrFocused() ? 221 : 202;
             int vOffset = menu.sortType * 16;
-            RenderSystem.enableDepthTest();
             blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
@@ -569,17 +513,46 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
+            RenderSystem.enableDepthTest();
             int uOffset = 105 + 19 * menu.viewType;
             int vOffset = this.isHoveredOrFocused() ? 231 : 215;
-            RenderSystem.enableDepthTest();
             blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+        }
+    }
+
+    private class ChannelButton extends ImageButton {
+
+        public ChannelButton(int pX, int pY) {
+            super(pX, pY, 19, 16, 48, 215, GUI_IMG, pButton -> channelButtonPress());
+        }
+
+        @Override
+        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GUI_IMG);
+            RenderSystem.enableDepthTest();
+            float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
+            blit(pPoseStack, this.x, this.y, 48.0F, vOffset, this.width, this.height, 256, 256);
+            if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
+        }
+
+        @Override
+        public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
+            List<FormattedCharSequence> list = new ArrayList<>();
+            String flag = "";
+            if (menu.channelOwner.equals(menu.player.getUUID())) flag = "§a";
+            else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) flag = "§c";
+            list.add(Component.translatable("bhs.GUI.channel.tip1", flag + menu.channel.getName()).getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.channel.tip2",
+                    flag + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
 
     @Override
     public void onClose() {
+        super.onClose();
         NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
         ((ClientChannel) menu.channel).removeListener();
-        super.onClose();
     }
 }

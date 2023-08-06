@@ -1,13 +1,13 @@
 package com.fiercemanul.blackholestorage;
 
 import com.fiercemanul.blackholestorage.block.*;
+import com.fiercemanul.blackholestorage.gui.ChannelSelectMenu;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import com.fiercemanul.blackholestorage.item.ActivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PortableControlPanelItem;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -86,6 +86,8 @@ public class BlackHoleStorage {
 
     public static final RegistryObject<MenuType<ControlPanelMenu>>
             CONTROL_PANEL_MENU = MENU_TYPE.register("control_panel_menu", () -> IForgeMenuType.create(ControlPanelMenu::new));
+    public static final RegistryObject<MenuType<ChannelSelectMenu>>
+            CHANNEL_SELECT_MENU = MENU_TYPE.register("channel_select_menu", () -> IForgeMenuType.create(ChannelSelectMenu::new));
 
 
     public BlackHoleStorage() {

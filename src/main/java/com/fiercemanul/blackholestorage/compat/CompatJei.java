@@ -1,7 +1,7 @@
 package com.fiercemanul.blackholestorage.compat;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
-import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
+import com.fiercemanul.blackholestorage.gui.ChannelSelectScreen;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -35,7 +35,7 @@ public class CompatJei implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        registration.addRecipeTransferHandler(ControlPanelMenu.class, BlackHoleStorage.CONTROL_PANEL_MENU.get(), RecipeTypes.CRAFTING, 41, 9, 0, 36);
+        registration.addRecipeTransferHandler(new ControlPanelRecipeHandler(), RecipeTypes.CRAFTING);
     }
 
     @Override
@@ -53,5 +53,19 @@ public class CompatJei implements IModPlugin {
                 return rect2is;
             }
         });
+        registration.addGuiContainerHandler(ChannelSelectScreen.class, new IGuiContainerHandler<>() {
+            @Override
+            public List<Rect2i> getGuiExtraAreas(ChannelSelectScreen screen) {
+                List<Rect2i> rect2is = new ArrayList<>();
+                rect2is.add(new Rect2i(
+                        screen.getGuiLeft(),
+                        screen.getGuiTop(),
+                        screen.imageWidth,
+                        screen.imageHeight
+                ));
+                return rect2is;
+            }
+        });
     }
+
 }

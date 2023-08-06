@@ -16,11 +16,16 @@ public class ServerChannel extends Channel{
     private final HashSet<String> changedItems = new HashSet<>();
     private final HashSet<String> changedFluids = new HashSet<>();
     private final HashSet<String> changedEnergy = new HashSet<>();
+    private boolean nameChanged = false;
     private final HashSet<ServerPlayer> players = new HashSet<>();
     private boolean removed = false;
 
 
     public ServerChannel() {}
+
+    public ServerChannel(String name) {
+        this.setName(name);
+    }
 
     public ServerChannel(CompoundTag dat) {
         initialize(dat);
@@ -42,6 +47,7 @@ public class ServerChannel extends Channel{
     }
 
     public void initialize(CompoundTag dat) {
+        if (dat.contains("name")) this.setName(dat.getString("name"));
         storageItems.clear();
         if (dat.contains("items")) {
             CompoundTag items = dat.getCompound("items");
@@ -81,7 +87,7 @@ public class ServerChannel extends Channel{
     }
 
     public void sendUpdate() {
-        if (changedItems.isEmpty()) return;
+        if (!hasChanged()) return;
         if (!players.isEmpty()) {
             CompoundTag tag = new CompoundTag();
 
@@ -97,21 +103,38 @@ public class ServerChannel extends Channel{
             changedEnergy.forEach(energyId -> energies.putLong(energyId, storageEnergies.getOrDefault(energyId, 0L)));
             tag.put("energies", energies);
 
+            if (nameChanged) tag.putString("name", getName());
+
             ChannelUpdatePack pack = new ChannelUpdatePack(tag);
+            players.forEach(player -> NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack));
+        }
+        resetChanged();
+    }
+
+    private boolean hasChanged() {
+        return !changedItems.isEmpty() || !changedFluids.isEmpty() || !changedEnergy.isEmpty() || nameChanged;
+    }
+
+    private void resetChanged() {
+        changedItems.clear();
+        changedFluids.clear();
+        changedEnergy.clear();
+        nameChanged = false;
+    }
+
+    public void sendFullUpdate() {
+        if (!hasChanged()) return;
+        if (!players.isEmpty()) {
+            ChannelPack pack = new ChannelPack(buildData());
             players.forEach(player -> NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack));
         }
         changedItems.clear();
     }
 
-    public void sendFullUpdate() {
-        if (changedItems.isEmpty()) return;
-        if (!players.isEmpty()) {
-            ChannelPack pack = new ChannelPack(buildData());
-            players.forEach(player -> {
-                NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), pack);
-            });
-        }
-        changedItems.clear();
+    @Override
+    public void setName(String channelName) {
+        nameChanged = true;
+        super.setName(channelName);
     }
 
     public CompoundTag buildData() {
@@ -122,6 +145,7 @@ public class ServerChannel extends Channel{
         CompoundTag energies = new CompoundTag();
         storageEnergies.forEach(energies::putLong);
         CompoundTag data = new CompoundTag();
+        data.putString("name", getName());
         data.put("items", items);
         data.put("fluids", fluids);
         data.put("energies", energies);

@@ -1,18 +1,20 @@
 package com.fiercemanul.blackholestorage.block;
 
-import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
+import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
+import com.fiercemanul.blackholestorage.gui.ChannelSelectMenuProvider;
+import com.fiercemanul.blackholestorage.gui.ControlPanelMenuProvider;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -32,6 +34,7 @@ import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 
 public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
@@ -64,6 +67,25 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ControlPanelBlockEntity(pos, state);
     }
+
+    @Override
+    public void appendHoverText(ItemStack pStack, @Nullable BlockGetter pLevel, List<Component> pTooltip, TooltipFlag pFlag) {
+        if (Minecraft.getInstance().player == null) return;
+        if (!pStack.hasTag()) return;
+        if (pStack.getTag().contains("BlockEntityTag")) {
+            CompoundTag nbt = pStack.getTag().getCompound("BlockEntityTag");
+            if (nbt.contains("owner")) {
+                UUID selfUUID = Minecraft.getInstance().player.getUUID();
+                UUID ownerUUID = nbt.getUUID("owner");
+                String ownerName = ClientChannelManager.getInstance().getUserName(nbt.getUUID("owner"));
+                boolean lock = nbt.getBoolean("locked");
+                if (selfUUID.equals(ownerUUID)) pTooltip.add(Component.translatable("bhs.GUI.owner", "§a" + ownerName));
+                else if (lock) pTooltip.add(Component.translatable("bhs.GUI.owner", "§c" + ownerName));
+                else pTooltip.add(Component.translatable("bhs.GUI.owner", ownerName));
+            }
+        }
+    }
+
 
 
     //方块状态相关
@@ -107,9 +129,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
 
     @Override
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
-        super.setPlacedBy(pLevel, pPos, pState, pPlacer, pStack);
-        if (!pLevel.isClientSide && pPlacer instanceof Player) {
-            //TODO: 可能会null
+        if (pPlacer instanceof ServerPlayer && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
             ControlPanelBlockEntity panelBlock = (ControlPanelBlockEntity) pLevel.getBlockEntity(pPos);
             panelBlock.setOwner(pPlacer.getUUID());
         }
@@ -117,35 +137,31 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
 
     @Override
     public InteractionResult use(BlockState blockState, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-
         if (!level.isClientSide && !player.isSpectator()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
-
-                MenuProvider containerProvider = new MenuProvider() {
-
-                    @Override
-                    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-                        return new ControlPanelMenu(containerId, player, controlPanelBlockEntity, -2);
-                    }
-
-                    @Override
-                    public Component getDisplayName() {
-                        return Component.translatable("screen.bhs.control_panel");
-                    }
-                };
-
-                UUID owner = (controlPanelBlockEntity.getOwner() == null) ? player.getUUID() : controlPanelBlockEntity.getOwner();
-                NetworkHooks.openScreen((ServerPlayer) player, containerProvider, buf -> {
-                    buf.writeBlockPos(pos);
-                    buf.writeInt(-2);
-                    buf.writeUUID(owner);
-                    buf.writeBoolean(controlPanelBlockEntity.isLocked());
-                    buf.writeBoolean(controlPanelBlockEntity.getCraftingMode());
-                    buf.writeUtf(controlPanelBlockEntity.getFilter(), 64);
-                    buf.writeByte(controlPanelBlockEntity.getSortType());
-                    buf.writeByte(controlPanelBlockEntity.getViewType());
-                });
+                if (controlPanelBlockEntity.getChannelInfo() != null) {
+                    UUID owner;
+                    if (controlPanelBlockEntity.getOwner() == null) {
+                        owner = player.getUUID();
+                        controlPanelBlockEntity.setOwner(owner);
+                        controlPanelBlockEntity.setLocked(false);
+                    } else owner = controlPanelBlockEntity.getOwner();
+                    NetworkHooks.openScreen((ServerPlayer) player, new ControlPanelMenuProvider(controlPanelBlockEntity), buf -> {
+                        buf.writeBlockPos(pos);
+                        buf.writeInt(-2);
+                        buf.writeUUID(owner);
+                        buf.writeBoolean(controlPanelBlockEntity.isLocked());
+                        buf.writeBoolean(controlPanelBlockEntity.getCraftingMode());
+                        buf.writeUtf(controlPanelBlockEntity.getFilter(), 64);
+                        buf.writeByte(controlPanelBlockEntity.getSortType());
+                        buf.writeByte(controlPanelBlockEntity.getViewType());
+                        buf.writeUUID(controlPanelBlockEntity.getChannelOwner());
+                        buf.writeInt(controlPanelBlockEntity.getChannelID());
+                    });
+                } else {
+                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {});
+                }
             }
         }
         return InteractionResult.SUCCESS;

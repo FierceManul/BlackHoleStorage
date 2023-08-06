@@ -4,6 +4,7 @@ public class NullChannel extends ServerChannel {
 
     public NullChannel() {
         super();
+        super.setName("RemovedChannel");
     }
 
     @Override

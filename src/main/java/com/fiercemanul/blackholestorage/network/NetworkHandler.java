@@ -49,5 +49,47 @@ public class NetworkHandler {
                 ControlPanelFilterPack::new,
                 ControlPanelFilterPack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(6,
+                ChannelListPack.class,
+                ChannelListPack::makePack,
+                ChannelListPack::new,
+                ChannelListPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(7,
+                AddChannelPack.class,
+                AddChannelPack::makePack,
+                AddChannelPack::new,
+                AddChannelPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(8,
+                ChanneltAddPack.class,
+                ChanneltAddPack::makePack,
+                ChanneltAddPack::new,
+                ChanneltAddPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(9,
+                ChannelSetPack.class,
+                ChannelSetPack::makePack,
+                ChannelSetPack::new,
+                ChannelSetPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(10,
+                SetChannelPack.class,
+                SetChannelPack::makePack,
+                SetChannelPack::new,
+                SetChannelPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(11,
+                ChannelRemovePack.class,
+                ChannelRemovePack::makePack,
+                ChannelRemovePack::new,
+                ChannelRemovePack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(12,
+                RenameChannelPack.class,
+                RenameChannelPack::makePack,
+                RenameChannelPack::new,
+                RenameChannelPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }

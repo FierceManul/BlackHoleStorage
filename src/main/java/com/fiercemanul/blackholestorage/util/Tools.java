@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 public class Tools {
 
+    public static final String UUID_REGEX = "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat(",###");
 
     public static int sortFromCount(String s1, String s2, HashMap<String, Long> storageItems, boolean reverseOrder) {
