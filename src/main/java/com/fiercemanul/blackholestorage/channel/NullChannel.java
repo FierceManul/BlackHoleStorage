@@ -2,7 +2,9 @@ package com.fiercemanul.blackholestorage.channel;
 
 public class NullChannel extends ServerChannel {
 
-    public NullChannel() {
+    public static final NullChannel INSTANCE = new NullChannel();
+
+    private NullChannel() {
         super();
         super.setName("RemovedChannel");
     }

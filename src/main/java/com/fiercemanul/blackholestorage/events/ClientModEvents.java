@@ -3,6 +3,7 @@ package com.fiercemanul.blackholestorage.events;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectScreen;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
+import com.fiercemanul.blackholestorage.gui.PassivePortScreen;
 import com.fiercemanul.blackholestorage.render.BlackHoleBlockRender;
 import com.fiercemanul.blackholestorage.render.BlackHoleModel;
 import net.minecraft.client.gui.screens.MenuScreens;
@@ -38,6 +39,7 @@ public class ClientModEvents {
         event.enqueueWork(() -> {
             MenuScreens.register(BlackHoleStorage.CONTROL_PANEL_MENU.get(), ControlPanelScreen::new);
             MenuScreens.register(BlackHoleStorage.CHANNEL_SELECT_MENU.get(), ChannelSelectScreen::new);
+            MenuScreens.register(BlackHoleStorage.PASSIVE_PORT_MENU.get(), PassivePortScreen::new);
         });
     }
 }

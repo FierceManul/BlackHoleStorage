@@ -3,6 +3,7 @@ package com.fiercemanul.blackholestorage;
 import com.fiercemanul.blackholestorage.block.*;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectMenu;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
+import com.fiercemanul.blackholestorage.gui.PassivePortMenu;
 import com.fiercemanul.blackholestorage.item.ActivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PassivePortBlockItem;
 import com.fiercemanul.blackholestorage.item.PortableControlPanelItem;
@@ -88,6 +89,8 @@ public class BlackHoleStorage {
             CONTROL_PANEL_MENU = MENU_TYPE.register("control_panel_menu", () -> IForgeMenuType.create(ControlPanelMenu::new));
     public static final RegistryObject<MenuType<ChannelSelectMenu>>
             CHANNEL_SELECT_MENU = MENU_TYPE.register("channel_select_menu", () -> IForgeMenuType.create(ChannelSelectMenu::new));
+    public static final RegistryObject<MenuType<PassivePortMenu>>
+            PASSIVE_PORT_MENU = MENU_TYPE.register("passive_port_menu", () -> IForgeMenuType.create(PassivePortMenu::new));
 
 
     public BlackHoleStorage() {

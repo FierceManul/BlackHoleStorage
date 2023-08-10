@@ -1211,8 +1211,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         if (panelItemSlotIndex >= 0) return panelItem == player.getInventory().getItem(panelItemSlotIndex);
-        else
-            return !controlPanelBlock.isRemoved() && !channel.isRemoved() && player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 16.0D;
+        else return !controlPanelBlock.isRemoved() && !channel.isRemoved() &&
+                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
     }
 
     @Override

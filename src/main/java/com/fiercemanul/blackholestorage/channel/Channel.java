@@ -3,12 +3,16 @@ package com.fiercemanul.blackholestorage.channel;
 import com.fiercemanul.blackholestorage.Config;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 
-public abstract class Channel {
+public abstract class Channel implements IItemHandler, IFluidHandler, IEnergyStorage {
 
     private String channelName = "UnName";
     public final HashMap<String, Long> storageItems = new HashMap<>();
@@ -253,10 +257,6 @@ public abstract class Channel {
         }
     }
 
-    public void takeItem(ItemStack itemStack) {
-        fillItemStack(itemStack, itemStack.getMaxStackSize());
-    }
-
     /**
      * 从频道获取物品，但不限制数量。
      */
@@ -374,5 +374,242 @@ public abstract class Channel {
 
     public void setName(String channelName) {
         this.channelName = channelName.substring(0, Math.min(channelName.length(), 64));
+    }
+
+
+    @Override
+    public int getSlots() {
+        return storageItems.size() + 9;
+    }
+
+    @Override
+    public @NotNull ItemStack getStackInSlot(int slot) {
+        if (slot >= storageItems.size()) return ItemStack.EMPTY;
+        String itemName = storageItems.keySet().toArray(new String[]{})[slot];
+        long count = Math.min(Integer.MAX_VALUE, storageItems.get(itemName));
+        return new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)), (int) count);
+    }
+
+    @Override
+    public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+        if (stack.isEmpty() || stack.hasTag()) return stack;
+        String itemId = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
+        ItemStack remainingStack = ItemStack.EMPTY;
+        if (storageItems.containsKey(itemId)) {
+            long storageCount = storageItems.get(itemId);
+            long remainingSpaces = Long.MAX_VALUE - storageCount;
+            if (remainingSpaces >= stack.getCount()) {
+                if (!simulate) storageItems.replace(itemId, storageCount + stack.getCount());
+            } else {
+                if (!simulate) storageItems.replace(itemId, Long.MAX_VALUE);
+                remainingStack = stack.copy();
+                remainingStack.setCount(stack.getCount() - (int) remainingSpaces);
+            }
+            if (!simulate) onItemChanged(itemId, false);
+        } else {
+            if (getChannelSize() >= maxStorageSize) return stack;
+            if (!simulate) {
+                storageItems.put(itemId, (long) stack.getCount());
+                onItemChanged(itemId, true);
+            }
+        }
+        return remainingStack;
+    }
+
+    @Override
+    public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+        if (slot >= storageItems.size()) return ItemStack.EMPTY;
+        String itemId = storageItems.keySet().toArray(new String[]{})[slot];
+        if (!storageItems.containsKey(itemId)) return ItemStack.EMPTY;
+        ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId)), 1);
+        int count = Math.min(itemStack.getMaxStackSize(), amount);
+        long storageCount = storageItems.get(itemId);
+        if (count < storageCount) {
+            if (!simulate) {
+                storageItems.replace(itemId, storageCount - count);
+                onItemChanged(itemId, false);
+            }
+        } else {
+            if (!simulate) {
+                storageItems.remove(itemId);
+                onItemChanged(itemId, true);
+            }
+            count = (int) storageCount;
+        }
+        itemStack.setCount(count);
+        return itemStack;
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+        return !stack.isEmpty() && !stack.hasTag();
+    }
+
+
+    @Override
+    public int getTanks() {
+        return storageFluids.size() + 9;
+    }
+
+    @Override
+    public @NotNull FluidStack getFluidInTank(int tank) {
+        if (tank >= storageFluids.size()) return FluidStack.EMPTY;
+        String fluidName = storageFluids.keySet().toArray(new String[]{})[tank];
+        long count = Math.min(Integer.MAX_VALUE, storageFluids.get(fluidName));
+        return new FluidStack(ForgeRegistries.FLUIDS.getValue(new ResourceLocation(fluidName)), (int) count);
+    }
+
+    @Override
+    public int getTankCapacity(int tank) {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean isFluidValid(int tank, @NotNull FluidStack stack) {
+        return !stack.isEmpty() && !stack.hasTag();
+    }
+
+    @Override
+    public int fill(FluidStack resource, FluidAction action) {
+        if (resource.isEmpty() || resource.hasTag()) return 0;
+        String fluidId = ForgeRegistries.FLUIDS.getKey(resource.getFluid()).toString();
+        if (storageFluids.containsKey(fluidId)) {
+            long storageAmount = storageFluids.get(fluidId);
+            long remainingSpaces = Long.MAX_VALUE - storageAmount;
+            if (remainingSpaces >= resource.getAmount()) {
+                if (action == FluidAction.EXECUTE) {
+                    storageFluids.replace(fluidId, storageAmount + resource.getAmount());
+                    onFluidChanged(fluidId, false);
+                }
+                return resource.getAmount();
+            } else {
+                if (action == FluidAction.EXECUTE) {
+                    storageFluids.replace(fluidId, Long.MAX_VALUE);
+                    onFluidChanged(fluidId, false);
+                }
+                return (int) remainingSpaces;
+            }
+        } else {
+            if (getChannelSize() >= maxStorageSize) return 0;
+            if (action == FluidAction.EXECUTE) {
+                storageFluids.put(fluidId, (long) resource.getAmount());
+                onFluidChanged(fluidId, true);
+            }
+            return resource.getAmount();
+        }
+    }
+
+    @Override
+    public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
+        String fluidId = ForgeRegistries.FLUIDS.getKey(resource.getFluid()).toString();
+        if (!storageFluids.containsKey(fluidId) || resource.getAmount() <= 0) return FluidStack.EMPTY;
+        long storageAmount = storageFluids.get(fluidId);
+        int count = resource.getAmount();
+        if (count < storageAmount) {
+            if (action == FluidAction.EXECUTE) {
+                storageFluids.replace(fluidId, storageAmount - count);
+                onFluidChanged(fluidId, false);
+            }
+        } else {
+            if (action == FluidAction.EXECUTE) {
+                storageFluids.remove(fluidId);
+                onFluidChanged(fluidId, true);
+            }
+            count = (int) storageAmount;
+        }
+        return new FluidStack(resource, count);
+    }
+
+    @Override
+    public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
+        if (storageFluids.isEmpty() || maxDrain <= 0) return FluidStack.EMPTY;
+        String fluidId = storageFluids.keySet().toArray(new String[]{})[0];
+        long storageAmount = storageFluids.get(fluidId);
+        if (maxDrain < storageAmount) {
+            if (action == FluidAction.EXECUTE) {
+                storageFluids.replace(fluidId, storageAmount - maxDrain);
+                onFluidChanged(fluidId, false);
+            }
+        } else {
+            if (action == FluidAction.EXECUTE) {
+                storageFluids.remove(fluidId);
+                onFluidChanged(fluidId, true);
+            }
+            maxDrain = (int) storageAmount;
+        }
+        return new FluidStack(ForgeRegistries.FLUIDS.getValue(new ResourceLocation(fluidId)), maxDrain);
+    }
+
+
+
+    @Override
+    public int receiveEnergy(int maxReceive, boolean simulate) {
+        if (storageEnergies.containsKey("blackholestorage:forge_energy")) {
+            long storageAmount = storageEnergies.get("blackholestorage:forge_energy");
+            long remainingSpaces = Long.MAX_VALUE - storageAmount;
+            if (remainingSpaces >= maxReceive) {
+                if (!simulate) {
+                    storageEnergies.replace("blackholestorage:forge_energy", storageAmount + maxReceive);
+                    onEnergyChanged("blackholestorage:forge_energy", false);
+                }
+                return maxReceive;
+            } else {
+                if (!simulate) {
+                    storageEnergies.replace("blackholestorage:forge_energy", Long.MAX_VALUE);
+                    onEnergyChanged("blackholestorage:forge_energy", false);
+                }
+                return (int) remainingSpaces;
+            }
+        } else {
+            if (!simulate) {
+                storageEnergies.put("blackholestorage:forge_energy", (long) maxReceive);
+                onEnergyChanged("blackholestorage:forge_energy", true);
+            }
+            return maxReceive;
+        }
+    }
+
+    @Override
+    public int extractEnergy(int maxExtract, boolean simulate) {
+        if (!storageEnergies.containsKey("blackholestorage:forge_energy")) return 0;
+        long storageCount = storageEnergies.get("blackholestorage:forge_energy");
+        if (maxExtract < storageCount) {
+            if (!simulate) {
+                storageEnergies.replace("blackholestorage:forge_energy", storageCount - maxExtract);
+                onEnergyChanged("blackholestorage:forge_energy", false);
+            }
+            return maxExtract;
+        } else {
+            if (!simulate) {
+                storageEnergies.remove("blackholestorage:forge_energy");
+                onEnergyChanged("blackholestorage:forge_energy", true);
+            }
+            return (int) storageCount;
+        }
+    }
+
+    @Override
+    public int getEnergyStored() {
+        return (int) Math.min(Integer.MAX_VALUE, storageEnergies.getOrDefault("blackholestorage:forge_energy", 0L));
+    }
+
+    @Override
+    public int getMaxEnergyStored() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public boolean canExtract() {
+        return storageEnergies.containsKey("blackholestorage:forge_energy");
+    }
+
+    @Override
+    public boolean canReceive() {
+        return storageEnergies.get("blackholestorage:forge_energy") < Long.MAX_VALUE;
     }
 }

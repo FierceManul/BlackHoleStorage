@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
+
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
@@ -131,7 +132,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
         if (pPlacer instanceof ServerPlayer && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
             ControlPanelBlockEntity panelBlock = (ControlPanelBlockEntity) pLevel.getBlockEntity(pPos);
-            panelBlock.setOwner(pPlacer.getUUID());
+            if (panelBlock != null) panelBlock.setOwner(pPlacer.getUUID());
         }
     }
 
@@ -140,17 +141,20 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
         if (!level.isClientSide && !player.isSpectator()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof ControlPanelBlockEntity controlPanelBlockEntity) {
-                if (controlPanelBlockEntity.getChannelInfo() != null) {
-                    UUID owner;
-                    if (controlPanelBlockEntity.getOwner() == null) {
-                        owner = player.getUUID();
-                        controlPanelBlockEntity.setOwner(owner);
-                        controlPanelBlockEntity.setLocked(false);
-                    } else owner = controlPanelBlockEntity.getOwner();
+
+                if (controlPanelBlockEntity.getOwner() == null) {
+                    controlPanelBlockEntity.setOwner(player.getUUID());
+                    controlPanelBlockEntity.setLocked(false);
+                }
+
+                if (controlPanelBlockEntity.getChannelInfo() == null)
+                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {
+                    });
+                else {
                     NetworkHooks.openScreen((ServerPlayer) player, new ControlPanelMenuProvider(controlPanelBlockEntity), buf -> {
                         buf.writeBlockPos(pos);
                         buf.writeInt(-2);
-                        buf.writeUUID(owner);
+                        buf.writeUUID(controlPanelBlockEntity.getOwner());
                         buf.writeBoolean(controlPanelBlockEntity.isLocked());
                         buf.writeBoolean(controlPanelBlockEntity.getCraftingMode());
                         buf.writeUtf(controlPanelBlockEntity.getFilter(), 64);
@@ -159,8 +163,6 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                         buf.writeUUID(controlPanelBlockEntity.getChannelOwner());
                         buf.writeInt(controlPanelBlockEntity.getChannelID());
                     });
-                } else {
-                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {});
                 }
             }
         }

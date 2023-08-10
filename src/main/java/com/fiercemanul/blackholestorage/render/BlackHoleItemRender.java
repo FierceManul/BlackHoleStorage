@@ -9,9 +9,12 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.model.data.ModelData;
@@ -39,7 +42,20 @@ public class BlackHoleItemRender extends BlockEntityWithoutLevelRenderer {
 
         BlockRenderDispatcher renderer = Minecraft.getInstance().getBlockRenderer();
         Block block = ((BlockItem) itemStack.getItem()).getBlock();
-        renderer.renderSingleBlock(block.defaultBlockState(), poseStack, buffer, packedLight, packedOverlay, ModelData.EMPTY, null);
+        BlockState state = block.defaultBlockState();
+        if (itemStack.getOrCreateTag().contains("BlockStateTag")) {
+            CompoundTag stateTag = itemStack.getTag().getCompound("BlockStateTag");
+            //在nbt里的方块状态，布尔是字符串形式。
+            state = state.setValue(BlockStateProperties.NORTH, stateTag.getString("north").equals("true"))
+                    .setValue(BlockStateProperties.SOUTH, stateTag.getString("south").equals("true"))
+                    .setValue(BlockStateProperties.EAST, stateTag.getString("east").equals("true"))
+                    .setValue(BlockStateProperties.WEST, stateTag.getString("west").equals("true"))
+                    .setValue(BlockStateProperties.UP, stateTag.getString("up").equals("true"))
+                    .setValue(BlockStateProperties.DOWN, stateTag.getString("down").equals("true"));
+        }
+        renderer.renderSingleBlock(state, poseStack, buffer, packedLight, packedOverlay, ModelData.EMPTY, null);
+
+        //BlockStateTag
 
         Matrix4f matrix4f = poseStack.last().pose();
         VertexConsumer consumer = buffer.getBuffer(RenderType.endGateway());

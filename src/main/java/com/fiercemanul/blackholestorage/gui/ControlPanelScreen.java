@@ -451,17 +451,17 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
-            int uOffset = menu.locked ? 86 : 67;
-            int vOffset = this.isHoveredOrFocused() ? 231 : 215;
-            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+            float uOffset = menu.locked ? 86.0F : 67.0F;
+            float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
+            blit(pPoseStack, this.x, this.y, uOffset, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
         @Override
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
-            UUID owner = ControlPanelScreen.this.menu.owner;
-            UUID user = ControlPanelScreen.this.menu.player.getUUID();
+            UUID owner = menu.owner;
+            UUID user = menu.player.getUUID();
             if (owner.equals(user)) {
                 list.add(Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName()).getVisualOrderText());
             } else if (ControlPanelScreen.this.menu.locked) {

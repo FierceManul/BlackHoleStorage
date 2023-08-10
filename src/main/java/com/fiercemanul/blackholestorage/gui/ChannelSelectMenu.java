@@ -59,6 +59,7 @@ public class ChannelSelectMenu extends AbstractContainerMenu {
     }
 
     private void tryBack() {
+        terminal.removeChannelSelector((ServerPlayer) player);
         if (terminal.getChannelInfo() == null) {
             player.closeContainer();
         } else {

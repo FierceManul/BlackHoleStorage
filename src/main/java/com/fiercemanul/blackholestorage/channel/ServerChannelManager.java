@@ -6,6 +6,7 @@ import com.fiercemanul.blackholestorage.network.*;
 import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -62,7 +63,7 @@ public class ServerChannelManager {
     private File saveDataPath;
     private boolean loadSuccess = true;
     private final MinecraftServer server;
-    private final NullChannel nullChannel = new NullChannel();
+    private final NullChannel nullChannel = NullChannel.INSTANCE;
     private final HashMap<UUID, HashMap<Integer, ServerChannel>> channelList = new HashMap<>();
     /**
      * <玩家，终端主人>
@@ -73,6 +74,7 @@ public class ServerChannelManager {
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         this.userCache.getCompound("nameCache").putString(event.getEntity().getUUID().toString(), event.getEntity().getGameProfile().getName());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new NameCachePack(userCache));
+        if (!loadSuccess) event.getEntity().getServer().getPlayerList().broadcastSystemMessage(Component.translatable("blackholestorage.load_error"), false);
     }
 
     @SubscribeEvent
@@ -84,12 +86,12 @@ public class ServerChannelManager {
 
     @SubscribeEvent
     public void onLevelSave(LevelEvent.Save event) {
-        if (isOverworld(event.getLevel())) save();
+        if (isOverworld(event.getLevel())) save(event.getLevel().getServer());
     }
 
     @SubscribeEvent
     public void onServerDown(ServerStoppingEvent event) {
-        this.save();
+        this.save(event.getServer());
         MinecraftForge.EVENT_BUS.unregister(this);
         instance = null;
     }
@@ -112,6 +114,7 @@ public class ServerChannelManager {
             } else {
                 this.initializeNameCache();
             }
+            BlackHoleStorage.LOGGER.info("用户名字缓存加载成功");
 
             File[] channelDirs = saveDataPath.listFiles(pathname -> pathname.isDirectory() && pathname.getName()
                     .matches(Tools.UUID_REGEX));
@@ -121,15 +124,17 @@ public class ServerChannelManager {
                     File[] channels = dir.listFiles(pathname -> pathname.isFile() && pathname.getName().matches("^(0|[1-9][0-9]{0,3})\\.dat$"));
                     if (channels == null) continue;
                     HashMap<Integer, ServerChannel> playerChannels = new HashMap<>();
-                    for (File channel : channels) {
-                        CompoundTag channelDat = NbtIo.readCompressed(channel);
-                        int channelID = Integer.parseInt(channel.getName().substring(0, channel.getName().length() - 4));
-                        playerChannels.put(channelID, new ServerChannel(channelDat));
+                    for (File channelFile : channels) {
+                        CompoundTag channelDat = NbtIo.readCompressed(channelFile);
+                        int channelID = Integer.parseInt(channelFile.getName().substring(0, channelFile.getName().length() - 4));
+                        ServerChannel channel = new ServerChannel(channelDat);
+                        playerChannels.put(channelID, channel);
+                        BlackHoleStorage.LOGGER.info("成功加载频道： " + dir.getName() + "——" + channelID + "——" + channel.getName());
                     }
                     channelList.put(player, playerChannels);
                 }
             }
-
+            BlackHoleStorage.LOGGER.info("黑洞储存数据加载完毕");
 
         } catch (Exception e) {
             loadSuccess = false;
@@ -137,7 +142,7 @@ public class ServerChannelManager {
         }
     }
 
-    private void save() {
+    private void save(MinecraftServer server) {
         if (!loadSuccess) return;
         try {
             File userCache = new File(saveDataPath, "UserCache.dat");
@@ -155,10 +160,12 @@ public class ServerChannelManager {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
+                    BlackHoleStorage.LOGGER.info("成功保存频道： " + uuid + "——" + id + "——" + channel.getName());
                 });
             });
 
         } catch (Exception e) {
+            server.getPlayerList().broadcastSystemMessage(Component.translatable("blackholestorage.save_error"), false);
             throw new RuntimeException("黑洞储存在保存数据的时候出错了！ 什么情况呢？", e);
         }
     }
@@ -244,6 +251,7 @@ public class ServerChannelManager {
             playerChannels.put(i, new ServerChannel(name));
             player.getInventory().getItem(slotId).shrink(1);
             sandChannelAdd(uuid, name, i);
+            BlackHoleStorage.LOGGER.info("添加了频道： " + uuid + "——" + i + "——" + name);
             break;
         }
     }

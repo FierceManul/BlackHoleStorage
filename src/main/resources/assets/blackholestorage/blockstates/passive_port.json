@@ -1,7 +1,62 @@
 {
-  "variants": {
-    "": {
-      "model": "blackholestorage:block/passive_port"
+  "multipart": [
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover"
+      },
+      "when": {
+        "north": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover",
+        "y": 180
+      },
+      "when": {
+        "south": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover",
+        "y": 90
+      },
+      "when": {
+        "east": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover",
+        "y": 270
+      },
+      "when": {
+        "west": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover",
+        "x": 270
+      },
+      "when": {
+        "up": "false"
+      }
+    },
+    {
+      "apply": {
+        "model": "blackholestorage:block/passive_port_cover",
+        "x": 90
+      },
+      "when": {
+        "down": "false"
+      }
     }
-  }
+  ]
 }
