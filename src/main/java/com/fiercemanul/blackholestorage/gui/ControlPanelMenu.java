@@ -158,6 +158,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (level.isClientSide) dummyContainer.refreshContainer(true);
     }*/
 
+
+
     //按钮相关
     @Override
     public boolean clickMenuButton(Player pPlayer, int pId) {
@@ -1210,8 +1212,16 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
+        if (channel.isRemoved()) {
+            if (panelItemSlotIndex >= 0) {
+                CompoundTag nbt = panelItem.getTag();
+                nbt.remove("channel");
+                panelItem.setTag(nbt);
+            } else controlPanelBlock.setChannel(null, -1);
+            openChannelScreen();
+        }
         if (panelItemSlotIndex >= 0) return panelItem == player.getInventory().getItem(panelItemSlotIndex);
-        else return !controlPanelBlock.isRemoved() && !channel.isRemoved() &&
+        else return !controlPanelBlock.isRemoved() &&
                 player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
     }
 

@@ -159,16 +159,22 @@ public class ControlPanelBlockEntity extends BlockEntity implements IChannelTerm
     public void setChannel(UUID channelOwner, int channelID) {
         this.channelOwner = channelOwner;
         this.channelID = channelID;
+        this.setChanged();
         channelSelectors.forEach(player -> ServerChannelManager.sendChannelSet(player, owner, channelOwner, channelID));
     }
 
     @Override
     public void removeChannel(ServerPlayer actor) {
-        this.channelID = -1;
-        this.channelOwner = null;
-        channelSelectors.forEach(player -> NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelSetPack((byte) -1, -1, "")));
-        if (!actor.addItem(new ItemStack(BlackHoleStorage.STORAGE_CORE.get())))
-            actor.drop(new ItemStack(BlackHoleStorage.STORAGE_CORE.get()), false);
+        if (channelOwner == null) return;
+        if (channelOwner.equals(actor.getUUID()) || channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
+            if (!ServerChannelManager.getInstance().tryRemoveChannel(channelOwner, channelID)) return;
+            this.channelID = -1;
+            this.channelOwner = null;
+            this.setChanged();
+            channelSelectors.forEach(player -> NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelSetPack((byte) -1, -1, "")));
+            if (!actor.addItem(new ItemStack(BlackHoleStorage.STORAGE_CORE.get())))
+                actor.drop(new ItemStack(BlackHoleStorage.STORAGE_CORE.get()), false);
+        }
     }
 
     @Override

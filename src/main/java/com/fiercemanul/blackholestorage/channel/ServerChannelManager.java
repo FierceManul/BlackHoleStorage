@@ -114,7 +114,7 @@ public class ServerChannelManager {
             } else {
                 this.initializeNameCache();
             }
-            BlackHoleStorage.LOGGER.info("用户名字缓存加载成功");
+            BlackHoleStorage.LOGGER.info("用户名缓存加载成功");
 
             File[] channelDirs = saveDataPath.listFiles(pathname -> pathname.isDirectory() && pathname.getName()
                     .matches(Tools.UUID_REGEX));
@@ -148,6 +148,7 @@ public class ServerChannelManager {
             File userCache = new File(saveDataPath, "UserCache.dat");
             if (!userCache.exists()) userCache.createNewFile();
             NbtIo.writeCompressed(this.userCache, userCache);
+            BlackHoleStorage.LOGGER.info("成功保存用户名缓存");
 
             channelList.forEach((uuid, channels) -> {
                 File user = new File(saveDataPath, uuid.toString());
@@ -280,6 +281,8 @@ public class ServerChannelManager {
         if (list.remove(id) != null) {
             channel.setRemoved();
             sandChannelRemove(channelOwner, id);
+            File file = new File(saveDataPath, channelOwner + "/" + id + ".dat");
+            file.delete();
             return true;
         }
         return false;

@@ -87,7 +87,9 @@ public class PassivePortMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@NotNull Player pPlayer) {
-        return !passivePort.isRemoved();
+
+        return !passivePort.isRemoved() &&
+                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
     }
 
     @Override

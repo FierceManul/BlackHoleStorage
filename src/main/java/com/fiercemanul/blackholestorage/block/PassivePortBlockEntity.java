@@ -128,7 +128,11 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
 
     public static void tick(Level level, BlockPos pos, BlockState state, PassivePortBlockEntity blockEntity) {
         if (level.isClientSide) return;
-        if (blockEntity.waterlogged && !blockEntity.channel.isRemoved()) blockEntity.channel.addFluid(new FluidStack(Fluids.WATER, 1000));
+        if (blockEntity.channel.isRemoved()) {
+            if (blockEntity.channelID >= 0) blockEntity.setChannel(null, -1);
+        } else {
+            if (blockEntity.waterlogged) blockEntity.channel.addFluid(new FluidStack(Fluids.WATER, 1000));
+        }
     }
 
     public void onBlockStateChange() {
@@ -166,13 +170,17 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
 
     @Override
     public void removeChannel(ServerPlayer actor) {
-        this.channelID = -1;
-        this.channelOwner = null;
-        this.setChanged();
-        this.channel = NullChannel.INSTANCE;
-        if (user != null) NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> user), new ChannelSetPack((byte) -1, -1, ""));
-        if (!actor.addItem(new ItemStack(BlackHoleStorage.STORAGE_CORE.get())))
-            actor.drop(new ItemStack(BlackHoleStorage.STORAGE_CORE.get()), false);
+        if (channelOwner == null) return;
+        if (channelOwner.equals(actor.getUUID()) || channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
+            if (!ServerChannelManager.getInstance().tryRemoveChannel(channelOwner, channelID)) return;
+            this.channelID = -1;
+            this.channelOwner = null;
+            this.setChanged();
+            this.channel = NullChannel.INSTANCE;
+            if (user != null) NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> user), new ChannelSetPack((byte) -1, -1, ""));
+            if (!actor.addItem(new ItemStack(BlackHoleStorage.STORAGE_CORE.get())))
+                actor.drop(new ItemStack(BlackHoleStorage.STORAGE_CORE.get()), false);
+        }
     }
 
     @Override
