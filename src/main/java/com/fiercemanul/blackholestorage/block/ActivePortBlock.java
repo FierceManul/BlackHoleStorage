@@ -30,7 +30,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
+
+    public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
+    public static final BooleanProperty SOUTH = BlockStateProperties.SOUTH;
+    public static final BooleanProperty WEST = BlockStateProperties.WEST;
+    public static final BooleanProperty EAST = BlockStateProperties.EAST;
+    public static final BooleanProperty UP = BlockStateProperties.UP;
+    public static final BooleanProperty DOWN = BlockStateProperties.DOWN;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+
     public ActivePortBlock() {
         super(Properties
                 .of(Material.METAL)
@@ -40,7 +48,15 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
                 .isValidSpawn((state, getter, pos, entityType) -> false)
                 .isSuffocating((state, getter, pos) -> false)
                 .color(MaterialColor.COLOR_BLACK));
-        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.FALSE));
+        this.registerDefaultState(this.stateDefinition.any()
+                .setValue(NORTH, Boolean.FALSE)
+                .setValue(SOUTH, Boolean.FALSE)
+                .setValue(WEST, Boolean.FALSE)
+                .setValue(EAST, Boolean.FALSE)
+                .setValue(UP, Boolean.FALSE)
+                .setValue(DOWN, Boolean.FALSE)
+                .setValue(WATERLOGGED, Boolean.FALSE)
+        );
     }
 
     @NotNull
@@ -51,7 +67,7 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(WATERLOGGED);
+        builder.add(NORTH, SOUTH, WEST, EAST, UP, DOWN, WATERLOGGED);
     }
 
     @Override
@@ -83,21 +99,18 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     }
 
 
-
     //互动
 
     @Override
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
         if (pPlacer instanceof ServerPlayer player && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
-            //PassivePortBlockEntity blockEntity = (PassivePortBlockEntity) pLevel.getBlockEntity(pPos);
+            //ActivePortBlockEntity blockEntity = (ActivePortBlockEntity) pLevel.getBlockEntity(pPos);
             //if (blockEntity != null) blockEntity.setOwner(player.getUUID());
         }
     }
 
     @Override
     public InteractionResult use(BlockState pState, Level level, BlockPos pPos, Player player, InteractionHand pHand, BlockHitResult pHit) {
-
-
 
 
         return InteractionResult.SUCCESS;

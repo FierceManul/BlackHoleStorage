@@ -69,6 +69,7 @@ public class PassivePortMenu extends AbstractContainerMenu {
     }
 
     public void switchState(BooleanProperty property) {
+        if (locked) return;
         BlockState state = passivePort.getBlockState();
         player.level.setBlock(blockPos, state.setValue(property, !state.getValue(property)), 11);
     }

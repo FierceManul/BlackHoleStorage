@@ -1,0 +1,19 @@
+{
+	"parent": "minecraft:block/cube_all",
+	"textures": {
+		"all": "blackholestorage:block/port_link"
+	},
+	"elements": [
+		{
+			"from": [5, 5, 0],
+			"to": [11, 11, 2],
+			"faces": {
+				"north": {"uv": [5, 5, 11, 11], "texture": "#all", "cullface": "north"},
+				"east": {"uv": [14, 5, 16, 11], "texture": "#all"},
+				"west": {"uv": [0, 5, 2, 11], "texture": "#all"},
+				"up": {"uv": [5, 0, 11, 2], "texture": "#all"},
+				"down": {"uv": [5, 14, 11, 16], "texture": "#all"}
+			}
+		}
+	]
+}

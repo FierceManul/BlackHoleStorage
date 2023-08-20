@@ -208,6 +208,4 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
             PassivePortScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
-
-
 }
