@@ -50,14 +50,15 @@ public class PortableControlPanelItem extends Item {
             ItemStack panel = pPlayer.getItemInHand(pUsedHand);
             int slotIndex = pUsedHand.equals(InteractionHand.MAIN_HAND) ? pPlayer.getInventory().selected : 40;
             CompoundTag nbt = panel.getOrCreateTag();
-            if (nbt.contains("channel")) {
-                if (!nbt.contains("owner")) nbt.putUUID("owner", pPlayer.getUUID());
-                if (!nbt.contains("locked")) nbt.putBoolean("locked", false);
+            if (!nbt.contains("owner")) {
+                nbt.putUUID("owner", pPlayer.getUUID());
+                nbt.putBoolean("locked", false);
                 if (!nbt.contains("craftingMode")) nbt.putBoolean("craftingMode", false);
                 if (!nbt.contains("filter")) nbt.putString("filter", "");
                 if (!nbt.contains("sortType")) nbt.putByte("sortType", (byte) 4);
                 if (!nbt.contains("viewType")) nbt.putByte("viewType", (byte) 0);
-
+            }
+            if (nbt.contains("channel")) {
                 NetworkHooks.openScreen((ServerPlayer) pPlayer, new ControlPanelMenuProvider(slotIndex), buf -> {
                     buf.writeBlockPos(BlockPos.ZERO);
                     buf.writeInt(slotIndex);
