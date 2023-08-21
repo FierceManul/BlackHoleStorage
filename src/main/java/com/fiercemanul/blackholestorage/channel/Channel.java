@@ -610,6 +610,6 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public boolean canReceive() {
-        return storageEnergies.get("blackholestorage:forge_energy") < Long.MAX_VALUE;
+        return storageEnergies.getOrDefault("blackholestorage:forge_energy", 0L) < Long.MAX_VALUE;
     }
 }
