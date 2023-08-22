@@ -33,11 +33,13 @@ public class ServerChannel extends Channel{
 
     @Override
     public void onItemChanged(String itemId, boolean listChanged) {
+        super.onItemChanged(itemId, listChanged);
         changedItems.add(itemId);
     }
 
     @Override
     public void onFluidChanged(String fluidId, boolean listChanged) {
+        super.onFluidChanged(fluidId,listChanged);
         changedFluids.add(fluidId);
     }
 
@@ -56,6 +58,7 @@ public class ServerChannel extends Channel{
                     storageItems.put(itemId, items.getLong(itemId));
                 }
             });
+            updateItemKeys();
         }
         storageFluids.clear();
         if (dat.contains("fluids")) {
@@ -65,6 +68,7 @@ public class ServerChannel extends Channel{
                     storageFluids.put(fluidId, fluids.getLong(fluidId));
                 }
             });
+            updateFluidKeys();
         }
         storageEnergies.clear();
         if (dat.contains("energies")) {

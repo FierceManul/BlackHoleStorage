@@ -1,6 +1,6 @@
 {
     "block.blackholestorage.passive_port": "被動埠",
-    "block.blackholestorage.active_port": "主動埠",
+    "block.blackholestorage.active_port": "主動埠(WIP)",
     "block.blackholestorage.control_panel": "控制面板",
     "item.blackholestorage.portable_control_panel": "便攜控制面板",
     "item.blackholestorage.core": "黑洞邏輯核心",

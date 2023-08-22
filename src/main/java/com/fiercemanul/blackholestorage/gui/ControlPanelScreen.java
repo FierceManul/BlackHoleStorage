@@ -553,6 +553,5 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     public void onClose() {
         super.onClose();
         NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
-        ((ClientChannel) menu.channel).removeListener();
     }
 }

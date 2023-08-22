@@ -16,15 +16,29 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     private String channelName = "UnName";
     public final HashMap<String, Long> storageItems = new HashMap<>();
+    private String[] itemKeys = new String[]{};
     public final HashMap<String, Long> storageFluids = new HashMap<>();
+    private String[] fluidKeys = new String[]{};
     public final HashMap<String, Long> storageEnergies = new HashMap<>();
     public int maxStorageSize = Config.MAX_SIZE_PRE_CHANNEL.get();
 
     public Channel() {}
 
-    public abstract void onItemChanged(String itemId, boolean listChanged);
+    public void onItemChanged(String itemId, boolean listChanged) {
+        if (listChanged) updateItemKeys();
+    }
 
-    public abstract void onFluidChanged(String fluidId, boolean listChanged);
+    public void onFluidChanged(String fluidId, boolean listChanged) {
+        if (listChanged) updateFluidKeys();
+    }
+
+    public void updateItemKeys() {
+        itemKeys = storageItems.keySet().toArray(new String[]{});
+    }
+
+    public void updateFluidKeys() {
+        fluidKeys = storageFluids.keySet().toArray(new String[]{});
+    }
 
     public abstract void onEnergyChanged(String energyId, boolean listChanged);
 
@@ -379,13 +393,13 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public int getSlots() {
-        return storageItems.size() + 9;
+        return storageItems.size() + 27;
     }
 
     @Override
     public @NotNull ItemStack getStackInSlot(int slot) {
         if (slot >= storageItems.size()) return ItemStack.EMPTY;
-        String itemName = storageItems.keySet().toArray(new String[]{})[slot];
+        String itemName = itemKeys[slot];
         long count = Math.min(Integer.MAX_VALUE, storageItems.get(itemName));
         return new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)), (int) count);
     }
@@ -419,7 +433,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     @Override
     public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
         if (slot >= storageItems.size()) return ItemStack.EMPTY;
-        String itemId = storageItems.keySet().toArray(new String[]{})[slot];
+        String itemId = itemKeys[slot];
         if (!storageItems.containsKey(itemId)) return ItemStack.EMPTY;
         ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId)), 1);
         int count = Math.min(itemStack.getMaxStackSize(), amount);
@@ -459,7 +473,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     @Override
     public @NotNull FluidStack getFluidInTank(int tank) {
         if (tank >= storageFluids.size()) return FluidStack.EMPTY;
-        String fluidName = storageFluids.keySet().toArray(new String[]{})[tank];
+        String fluidName = fluidKeys[tank];
         long count = Math.min(Integer.MAX_VALUE, storageFluids.get(fluidName));
         return new FluidStack(ForgeRegistries.FLUIDS.getValue(new ResourceLocation(fluidName)), (int) count);
     }
@@ -528,7 +542,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     @Override
     public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
         if (storageFluids.isEmpty() || maxDrain <= 0) return FluidStack.EMPTY;
-        String fluidId = storageFluids.keySet().toArray(new String[]{})[0];
+        String fluidId = fluidKeys[0];
         long storageAmount = storageFluids.get(fluidId);
         if (maxDrain < storageAmount) {
             if (action == FluidAction.EXECUTE) {

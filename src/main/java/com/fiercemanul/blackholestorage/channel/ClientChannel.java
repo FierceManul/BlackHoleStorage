@@ -26,11 +26,13 @@ public class ClientChannel extends Channel {
 
     @Override
     public void onItemChanged(String itemId, boolean listChanged) {
+        super.onItemChanged(itemId, listChanged);
         if (container != null) container.refreshContainer(listChanged);
     }
 
     @Override
     public void onFluidChanged(String fluidId, boolean listChanged) {
+        super.onFluidChanged(fluidId,listChanged);
         if (container != null) container.refreshContainer(listChanged);
     }
 
@@ -45,26 +47,26 @@ public class ClientChannel extends Channel {
         CompoundTag fluids = tag.getCompound("fluids");
         CompoundTag energies = tag.getCompound("energies");
         String name = tag.getString("name");
-        AtomicBoolean flag = new AtomicBoolean(false);
-        AtomicBoolean flag1 = new AtomicBoolean(false);
+        AtomicBoolean fullUpdate = new AtomicBoolean(false);
+        AtomicBoolean needRefreshContainer = new AtomicBoolean(false);
         items.getAllKeys().forEach(itemId -> {
             long count = items.getLong(itemId);
             if (count <= 0L) {
                 if (storageItems.containsKey(itemId)) {
                     storageItems.remove(itemId);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             } else {
                 if (storageItems.containsKey(itemId)) {
                     if (storageItems.get(itemId) != count) {
                         storageItems.replace(itemId, count);
-                        flag1.set(true);
+                        needRefreshContainer.set(true);
                     }
                 } else {
                     storageItems.put(itemId, count);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             }
         });
@@ -73,19 +75,19 @@ public class ClientChannel extends Channel {
             if (count <= 0L ) {
                 if (storageFluids.containsKey(fluidId)) {
                     storageFluids.remove(fluidId);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             } else {
                 if (storageFluids.containsKey(fluidId)) {
                     if (storageFluids.get(fluidId) != count) {
                         storageFluids.replace(fluidId, count);
-                        flag1.set(true);
+                        needRefreshContainer.set(true);
                     }
                 } else {
                     storageFluids.put(fluidId, count);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             }
         });
@@ -94,24 +96,28 @@ public class ClientChannel extends Channel {
             if (count <= 0L ) {
                 if (storageEnergies.containsKey(energyId)) {
                     storageEnergies.remove(energyId);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             } else {
                 if (storageEnergies.containsKey(energyId)) {
                     if (storageEnergies.get(energyId) != count) {
                         storageEnergies.replace(energyId, count);
-                        flag1.set(true);
+                        needRefreshContainer.set(true);
                     }
                 } else {
                     storageEnergies.put(energyId, count);
-                    flag.set(true);
-                    flag1.set(true);
+                    fullUpdate.set(true);
+                    needRefreshContainer.set(true);
                 }
             }
         });
         if (!name.isEmpty()) setName(name);
-        if (flag1.get()) container.refreshContainer(flag.get());
+        if (needRefreshContainer.get()) container.refreshContainer(fullUpdate.get());
+        if (fullUpdate.get()) {
+            updateItemKeys();
+            updateFluidKeys();
+        }
     }
 
     public void fullUpdate(CompoundTag tag) {
@@ -125,6 +131,8 @@ public class ClientChannel extends Channel {
         items.getAllKeys().forEach(itemId -> storageItems.put(itemId, items.getLong(itemId)));
         fluids.getAllKeys().forEach(fluidId -> storageFluids.put(fluidId, fluids.getLong(fluidId)));
         energies.getAllKeys().forEach(energyId -> storageEnergies.put(energyId, energies.getLong(energyId)));
+        updateItemKeys();
+        updateFluidKeys();
         setName(name);
         if (container != null) {
             container.refreshContainer(true);

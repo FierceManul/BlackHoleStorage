@@ -3,10 +3,7 @@ package com.fiercemanul.blackholestorage.gui;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.Config;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import com.fiercemanul.blackholestorage.channel.Channel;
-import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
-import com.fiercemanul.blackholestorage.channel.ServerChannel;
-import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
+import com.fiercemanul.blackholestorage.channel.*;
 import com.fiercemanul.blackholestorage.network.ControlPanelMenuActionPack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.fiercemanul.blackholestorage.util.Tools;
@@ -39,6 +36,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ControlPanelMenu extends AbstractContainerMenu {
 
@@ -223,8 +221,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         public static final int DRAG_CLONE = 9;
     }
 
-    public void onClickDummySlot(String itemId, boolean right, boolean shift) {
-    }
 
     public void onLeftClickDummySlot(String type, String id) {
         ItemStack carried = getCarried();
@@ -249,6 +245,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 return;
             }
             //特殊操作，比如取液体.
+            //原版桶
             if (type.equals("fluid") && carried.getItem().equals(Items.BUCKET)) {
                 if (channel.storageFluids.get(id) < FluidType.BUCKET_VOLUME) return;
                 FluidStack fluidStack = new FluidStack(ForgeRegistries.FLUIDS.getValue(location), 1);
@@ -257,21 +254,34 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 channel.takeFluid(id, FluidType.BUCKET_VOLUME);
                 setCarried(fluidBucket);
             } else {
-                //原版桶
-                if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) return;
+                if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) {
+                    channel.addItem(carried);
+                    return;
+                }
                 //其他容器
                 AtomicBoolean canal = new AtomicBoolean(false);
                 if (type.equals("fluid")) carried.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(iFluidHandlerItem -> {
                     if (!channel.storageFluids.containsKey(id)) return;
                     FluidStack fluidStack = new FluidStack(ForgeRegistries.FLUIDS.getValue(location), (int) Math.min(FluidType.BUCKET_VOLUME, channel.storageFluids.get(id)));
-                    int tanks = iFluidHandlerItem.getTanks();
-                    for (int i = 0; i < tanks; i++) {
-                        int filledAmount = iFluidHandlerItem.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
-                        if (filledAmount == 0) continue;
-                        channel.takeFluid(id, filledAmount);
-                        canal.set(true);
-                        break;
+                    int filledAmount = iFluidHandlerItem.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
+                    if (filledAmount != 0) {
+                        boolean succeedInput = true;
+                        int tanks = iFluidHandlerItem.getTanks();
+                        ItemStack testItem = carried.copy();
+                        AtomicReference<FluidStack> testFluid = new AtomicReference<>(FluidStack.EMPTY);
+                        for (int i = 0; i < tanks; i++) {
+                            int finalI = i;
+                            testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
+                                    testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                            if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
+                                succeedInput = false;
+                                setCarried(getCarried().copy());
+                                break;
+                            }
+                        }
+                        if (succeedInput) channel.takeFluid(id, filledAmount);
                     }
+                    canal.set(true);
                 });
                 else if (type.equals("energy") && id.equals("blackholestorage:forge_energy"))
                     carried.getCapability(ForgeCapabilities.ENERGY).ifPresent(iEnergyStorage -> {
@@ -283,6 +293,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         canal.set(true);
                     });
                 else if (type.equals("item")) carried.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(iItemHandler -> {
+                    //TODO：这里需要做与流体一样的正确性检查防止刷物品，但需要一个有这个问题的容器才能做测试。
                     if (!channel.storageItems.containsKey(id)) return;
                     int slots = iItemHandler.getSlots();
                     for (int i = 0; i < slots; i++) {
@@ -338,18 +349,34 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) return;
             AtomicBoolean canal = new AtomicBoolean(false);
             carried.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(iFluidHandlerItem -> {
-                int tanks = iFluidHandlerItem.getTanks();
-                for (int i = 0; i < tanks; i++) {
-                    FluidStack fluidStack = iFluidHandlerItem.getFluidInTank(i);
-                    if (fluidStack.isEmpty() || fluidStack.hasTag()) continue;
-                    long j = channel.canStoredAmount(fluidStack);
-                    if (j == 0) continue;
-                    FluidStack resultFluidStack = iFluidHandlerItem.drain((int) Math.min(FluidType.BUCKET_VOLUME, j), IFluidHandler.FluidAction.EXECUTE);
-                    if (resultFluidStack.isEmpty()) continue;
+                FluidStack resultFluidStack = iFluidHandlerItem.drain(FluidType.BUCKET_VOLUME, IFluidHandler.FluidAction.SIMULATE);
+                if (iFluidHandlerItem instanceof FluidBucketWrapper) {
                     channel.addFluid(resultFluidStack);
-                    canal.set(true);
-                    if (iFluidHandlerItem instanceof FluidBucketWrapper) setCarried(new ItemStack(Items.BUCKET));
+                    setCarried(new ItemStack(Items.BUCKET));
                     return;
+                }
+                if (!resultFluidStack.isEmpty()) {
+                    int canStoredAmount = channel.canStoredAmount(resultFluidStack);
+                    if (canStoredAmount > 0) {
+                        resultFluidStack.setAmount(Math.min(resultFluidStack.getAmount(), canStoredAmount));
+                        resultFluidStack = iFluidHandlerItem.drain(resultFluidStack, IFluidHandler.FluidAction.EXECUTE);
+                        if (!resultFluidStack.isEmpty()) {
+                            int tanks = iFluidHandlerItem.getTanks();
+                            ItemStack testItem = carried.copy();
+                            AtomicReference<FluidStack> testFluid = new AtomicReference<>(FluidStack.EMPTY);
+                            for (int i = 0; i < tanks; i++) {
+                                int finalI = i;
+                                testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
+                                        testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
+                                    setCarried(getCarried().copy());
+                                    return;
+                                }
+                            }
+                            channel.addFluid(resultFluidStack);
+                            canal.set(true);
+                        }
+                    }
                 }
             });
             if (canal.get()) return;
@@ -375,7 +402,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
             });
             if (canal.get()) return;
-            channel.fillItemStack(carried, -1);
+            channel.addItem(carried);
         }
     }
 
@@ -442,6 +469,20 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         fluidStack.setAmount(transmitAmount);
                         for (int j = 0; j < 1024; j++) {
                             int filledAmount = iFluidHandlerItem.fill(fluidStack, IFluidHandler.FluidAction.EXECUTE);
+                            if (j == 0) {
+                                ItemStack testItem = carried.copy();
+                                AtomicReference<FluidStack> testFluid = new AtomicReference<>(FluidStack.EMPTY);
+                                for (int k = 0; k < tanks; k++) {
+                                    int finalI = k;
+                                    testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
+                                            testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                    if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
+                                        filledAmount = 0;
+                                        setCarried(getCarried().copy());
+                                        break;
+                                    }
+                                }
+                            }
                             if (filledAmount == 0) break;
                             transmitAmount -= filledAmount;
                             if (transmitAmount <= 0) break;
@@ -534,27 +575,43 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) return;
             AtomicBoolean canal = new AtomicBoolean(false);
             carried.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(iFluidHandlerItem -> {
-                int tanks = iFluidHandlerItem.getTanks();
-                for (int i = 0; i < tanks; i++) {
-                    FluidStack inTankFluid = iFluidHandlerItem.getFluidInTank(i);
-                    if (inTankFluid.isEmpty() || inTankFluid.hasTag()) continue;
-                    String fluidId = ForgeRegistries.FLUIDS.getKey(inTankFluid.getFluid()).toString();
-                    int maxRemoveAmount = channel.canStoredFluid(fluidId);
-                    int markAmount = maxRemoveAmount;
-                    //规避限速，最大循环1024次，防止过度循环。
-                    for (int j = 0; j < 1024; j++) {
-                        FluidStack resultFluidStack = iFluidHandlerItem.drain(Math.min(iFluidHandlerItem.getTankCapacity(i), maxRemoveAmount), IFluidHandler.FluidAction.EXECUTE);
-                        if (resultFluidStack.isEmpty()) break;
-                        maxRemoveAmount -= resultFluidStack.getAmount();
-                        if (iFluidHandlerItem.getFluidInTank(i).getAmount() <= 0) break;
-                        if (maxRemoveAmount <= 0) break;
-                    }
-                    markAmount -= maxRemoveAmount;
-                    if (markAmount > 0) {
-                        channel.addFluid(fluidId, markAmount);
-                        canal.set(true);
-                        if (iFluidHandlerItem instanceof FluidBucketWrapper) setCarried(new ItemStack(Items.BUCKET));
-                        return;
+                FluidStack resultFluidStack = iFluidHandlerItem.drain(FluidType.BUCKET_VOLUME, IFluidHandler.FluidAction.SIMULATE);
+                if (iFluidHandlerItem instanceof FluidBucketWrapper) {
+                    channel.addFluid(resultFluidStack);
+                    setCarried(new ItemStack(Items.BUCKET));
+                    return;
+                }
+                if (!resultFluidStack.isEmpty()) {
+                    String fluid = ForgeRegistries.FLUIDS.getKey(resultFluidStack.getFluid()).toString();
+                    long canStoredAmount = Long.MAX_VALUE - channel.storageFluids.getOrDefault(fluid, 0L);
+                    if (canStoredAmount > 0L) {
+                        long removedAmount = 0L;
+                        //规避限速，最大循环1024次，防止过度循环。
+                        for (int i = 0; i < 1024; i++) {
+                            resultFluidStack.setAmount((int) Math.min(Integer.MAX_VALUE, canStoredAmount));
+                            resultFluidStack = iFluidHandlerItem.drain(resultFluidStack, IFluidHandler.FluidAction.EXECUTE);
+                            if (resultFluidStack.isEmpty()) break;
+                            if (i == 0) {
+                                int tanks = iFluidHandlerItem.getTanks();
+                                ItemStack testItem = carried.copy();
+                                AtomicReference<FluidStack> testFluid = new AtomicReference<>(FluidStack.EMPTY);
+                                for (int j = 0; j < tanks; j++) {
+                                    int finalI = j;
+                                    testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
+                                            testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                    if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(j))) {
+                                        setCarried(getCarried().copy());
+                                        return;
+                                    }
+                                }
+                            }
+                            canStoredAmount -= resultFluidStack.getAmount();
+                            removedAmount += resultFluidStack.getAmount();
+                        }
+                        if (removedAmount > 0) {
+                            channel.addFluid(fluid, removedAmount);
+                            canal.set(true);
+                        }
                     }
                 }
             });
@@ -1227,7 +1284,10 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     @Override
     public void removed(Player player) {
-        if (level.isClientSide) return;
+        if (level.isClientSide) {
+            ((ClientChannel) channel).removeListener();
+            return;
+        }
         if (!channel.isRemoved()) ((ServerChannel) channel).removeListener((ServerPlayer) player);
         super.removed(player);
         clearCraftSlots();

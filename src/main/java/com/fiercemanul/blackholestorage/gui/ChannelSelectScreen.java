@@ -178,12 +178,6 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         return super.keyReleased(pKeyCode, pScanCode, pModifiers);
     }
 
-    @Override
-    public void onClose() {
-        super.onClose();
-        channelManager.onScreenClose();
-    }
-
     private class ChannelScrollBar extends SimpleScrollBar {
 
         public ChannelScrollBar(int x, int y, int weight, int height) {

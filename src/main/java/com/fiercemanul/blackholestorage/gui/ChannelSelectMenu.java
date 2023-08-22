@@ -1,6 +1,7 @@
 package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
+import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
 import com.fiercemanul.blackholestorage.channel.IChannelTerminal;
 import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
 import net.minecraft.network.FriendlyByteBuf;
@@ -75,7 +76,8 @@ public class ChannelSelectMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player pPlayer) {
         super.removed(pPlayer);
-        if (!pPlayer.level.isClientSide) {
+        if (pPlayer.isLocalPlayer()) ClientChannelManager.getInstance().onScreenClose();
+        else {
             terminal.removeChannelSelector((ServerPlayer) pPlayer);
             ServerChannelManager.getInstance().removeChannelSelector((ServerPlayer) player);
         }
