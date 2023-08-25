@@ -252,7 +252,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     public void containerTick() {
         super.containerTick();
         if (shortSearchBox.isFocused()) shortSearchBox.tick();
-        if (longSearchBox.isFocused()) shortSearchBox.tick();
+        if (longSearchBox.isFocused()) longSearchBox.tick();
     }
 
     @Override
@@ -551,7 +551,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     @Override
     public void onClose() {
-        super.onClose();
         NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
+        super.onClose();
     }
 }

@@ -5,11 +5,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public abstract class Channel implements IItemHandler, IFluidHandler, IEnergyStorage {
@@ -17,8 +19,10 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     private String channelName = "UnName";
     public final HashMap<String, Long> storageItems = new HashMap<>();
     private String[] itemKeys = new String[]{};
+    private ItemStack[] slotItemTemp = {ItemStack.EMPTY};
     public final HashMap<String, Long> storageFluids = new HashMap<>();
     private String[] fluidKeys = new String[]{};
+    private FluidStack[] slotFluidTemp = {FluidStack.EMPTY};
     public final HashMap<String, Long> storageEnergies = new HashMap<>();
     public int maxStorageSize = Config.MAX_SIZE_PRE_CHANNEL.get();
 
@@ -34,10 +38,14 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     public void updateItemKeys() {
         itemKeys = storageItems.keySet().toArray(new String[]{});
+        slotItemTemp = new ItemStack[itemKeys.length];
+        for (int i = 0; i < itemKeys.length; i++) slotItemTemp[i] = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemKeys[i])));
     }
 
     public void updateFluidKeys() {
         fluidKeys = storageFluids.keySet().toArray(new String[]{});
+        slotFluidTemp = new FluidStack[fluidKeys.length];
+        for (int i = 0; i < fluidKeys.length; i++) slotFluidTemp[i] = new FluidStack(ForgeRegistries.FLUIDS.getValue(new ResourceLocation(fluidKeys[i])), 1);
     }
 
     public abstract void onEnergyChanged(String energyId, boolean listChanged);
@@ -398,10 +406,10 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public @NotNull ItemStack getStackInSlot(int slot) {
-        if (slot >= storageItems.size()) return ItemStack.EMPTY;
-        String itemName = itemKeys[slot];
-        long count = Math.min(Integer.MAX_VALUE, storageItems.get(itemName));
-        return new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)), (int) count);
+        if (slot >= itemKeys.length) return ItemStack.EMPTY;
+        ItemStack itemStack = slotItemTemp[slot];
+        itemStack.setCount((int) Math.min(Integer.MAX_VALUE, storageItems.get(itemKeys[slot])));
+        return itemStack;
     }
 
     @Override
@@ -432,7 +440,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-        if (slot >= storageItems.size()) return ItemStack.EMPTY;
+        if (slot >= itemKeys.length) return ItemStack.EMPTY;
         String itemId = itemKeys[slot];
         if (!storageItems.containsKey(itemId)) return ItemStack.EMPTY;
         ItemStack itemStack = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId)), 1);
@@ -472,10 +480,10 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public @NotNull FluidStack getFluidInTank(int tank) {
-        if (tank >= storageFluids.size()) return FluidStack.EMPTY;
-        String fluidName = fluidKeys[tank];
-        long count = Math.min(Integer.MAX_VALUE, storageFluids.get(fluidName));
-        return new FluidStack(ForgeRegistries.FLUIDS.getValue(new ResourceLocation(fluidName)), (int) count);
+        if (tank >= fluidKeys.length) return FluidStack.EMPTY;
+        FluidStack fluidStack = slotFluidTemp[tank];
+        fluidStack.setAmount((int) Math.min(Integer.MAX_VALUE, storageFluids.get(fluidKeys[tank])));
+        return fluidStack;
     }
 
     @Override
