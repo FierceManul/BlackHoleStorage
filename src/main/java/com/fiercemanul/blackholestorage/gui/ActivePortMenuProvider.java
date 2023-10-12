@@ -1,6 +1,6 @@
 package com.fiercemanul.blackholestorage.gui;
 
-import com.fiercemanul.blackholestorage.block.PassivePortBlockEntity;
+import com.fiercemanul.blackholestorage.block.ActivePortBlockEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -10,11 +10,11 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-public final class PassivePortMenuProvider implements MenuProvider {
+public final class ActivePortMenuProvider implements MenuProvider {
 
-    private final PassivePortBlockEntity blockEntity;
+    private final ActivePortBlockEntity blockEntity;
 
-    public PassivePortMenuProvider(PassivePortBlockEntity blockEntity) {
+    public ActivePortMenuProvider(ActivePortBlockEntity blockEntity) {
         this.blockEntity = blockEntity;
     }
 
@@ -26,6 +26,6 @@ public final class PassivePortMenuProvider implements MenuProvider {
     @Override
     @ParametersAreNonnullByDefault
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
-        return new PassivePortMenu(pContainerId, pPlayer, blockEntity);
+        return new ActivePortMenu(pContainerId, pPlayer, blockEntity);
     }
 }

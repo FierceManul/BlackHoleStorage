@@ -91,5 +91,11 @@ public class NetworkHandler {
                 RenameChannelPack::new,
                 RenameChannelPack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(13,
+                ClientPortResultPack.class,
+                ClientPortResultPack::makePack,
+                ClientPortResultPack::new,
+                ClientPortResultPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }

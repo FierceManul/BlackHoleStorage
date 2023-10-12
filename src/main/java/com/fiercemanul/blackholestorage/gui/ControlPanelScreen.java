@@ -18,6 +18,7 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -29,10 +30,10 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 
 @OnlyIn(Dist.CLIENT)
@@ -45,6 +46,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     private String[] lastHoveredObject = new String[2];
     private long lastCount = 0;
     private String lastFormatCountTemp = "";
+    private SortButton sortButton;
     private ItemScrollBar scrollBar;
     private EditBox shortSearchBox;
     private EditBox longSearchBox;
@@ -65,7 +67,8 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.addRenderableWidget(new ToggleCraftingButton(this.leftPos + 142, this.topPos + 163));
         this.addRenderableWidget(new ToggleLockButton(this.leftPos + 177, this.topPos + 210));
         this.addRenderableWidget(new ChannelButton(this.leftPos +177, this.topPos + 193));
-        this.addRenderableWidget(new SortButton(this.leftPos + 177, this.topPos + 176));
+        this.sortButton = new SortButton(this.leftPos + 177, this.topPos + 176);
+        this.addRenderableWidget(sortButton);
         this.addRenderableWidget(new ViewTypeButton(this.leftPos + 177, this.topPos + 159));
         this.shortSearchBox = new EditBox(this.font, leftPos + 75, topPos + 126, 59, 9, Component.translatable("bhs.GUI.search"));
         this.shortSearchBox.setMaxLength(64);
@@ -83,6 +86,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(poseStack);
         super.render(poseStack, mouseX, mouseY, partialTicks);
@@ -92,6 +96,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void renderBg(PoseStack stack, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, GUI_IMG);
         this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 6);
@@ -132,7 +137,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     private void renderFluids(PoseStack poseStack) {
         poseStack.pushPose();
-        poseStack.translate(leftPos, topPos, 100.0D);
+        poseStack.translate(leftPos, topPos, 300.0D);
         menu.dummyContainer.fluidStacks.forEach((integer, fluidStack) -> {
             Slot slot = menu.slots.get(integer + 51);
             FluidItemRender.renderFluid(fluidStack, poseStack, slot.x, slot.y, 0);
@@ -160,6 +165,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void renderTooltip(PoseStack pPoseStack, int pX, int pY) {
         if (this.hoveredSlot != null) {
             if (hoveredSlot.index >= 51) {
@@ -173,8 +179,8 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
                 list.add(Component.translatable("bhs.GUI.search.tip1").getVisualOrderText());
                 list.add(Component.translatable("bhs.GUI.search.tip2").getVisualOrderText());
                 list.add(Component.translatable("bhs.GUI.search.tip3").getVisualOrderText());
-                ControlPanelScreen.this.renderToolTip(pPoseStack, list, pX, pY);
-            }
+                renderTooltip(pPoseStack, list, pX, pY);
+            } else if (sortButton.isHoveredOrFocused()) sortButton.renderToolTip(pPoseStack, pX, pY);
         }
     }
 
@@ -185,14 +191,14 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         long count;
         if (hoveredObject[0].equals("item")) {
             components = this.getTooltipFromItem(hoveredSlot.getItem());
-            count = menu.channel.storageItems.getOrDefault(hoveredObject[1], 0L);
+            count = menu.channel.getRealItemAmount(hoveredObject[1]);
         } else if (hoveredObject[0].equals("fluid")) {
             components.add(Component.translatable("block." + hoveredObject[1].replace(':', '.')));
             if (this.minecraft.options.advancedItemTooltips) components.add(Component.literal(hoveredObject[1]).withStyle(ChatFormatting.DARK_GRAY));
-            count = menu.channel.storageFluids.getOrDefault(hoveredObject[1], 0L);
+            count = menu.channel.getRealFluidAmount(hoveredObject[1]);
         } else {
             components.add(hoveredSlot.getItem().getHoverName());
-            count = menu.channel.storageEnergies.getOrDefault(hoveredObject[1], 0L);
+            count = menu.channel.getRealEnergyAmount(hoveredObject[1]);
         }
         if (!Arrays.equals(hoveredObject, lastHoveredObject)) {
             String formatCount = Tools.DECIMAL_FORMAT.format(count);
@@ -241,13 +247,6 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     @Override
     protected void renderLabels(PoseStack stack, int i, int j) {}
 
-    /**
-     * 加这一步按钮ToolTip才能渲染多行本文，我不知道为什么，反正他就是可以。
-     */
-    private void renderToolTip(PoseStack pPoseStack, List<? extends FormattedCharSequence> pTooltips, int pMouseX, int pMouseY) {
-        super.renderTooltip(pPoseStack, pTooltips, pMouseX, pMouseY);
-    }
-
     @Override
     public void containerTick() {
         super.containerTick();
@@ -259,18 +258,20 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
         if (pButton == 1) {
             //短搜索框
-            if (pMouseX >= leftPos + 74 && pMouseX <= leftPos + 141 && pMouseY >= topPos + 125 && pMouseY <= topPos + 135) {
+            if (pMouseX >= leftPos + 74 && pMouseX <= leftPos + 141 && pMouseY >= topPos + 125 && pMouseY <= topPos + 135 && menu.craftingMode) {
                 menu.filter = "";
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
+                shortSearchBox.setFocus(true);
             }
             //长搜索框
-            else if (pMouseX >= leftPos + 40 && pMouseX <= leftPos + 124 && pMouseY >= topPos + 162 && pMouseY <= topPos + 172) {
+            else if (pMouseX >= leftPos + 40 && pMouseX <= leftPos + 124 && pMouseY >= topPos + 162 && pMouseY <= topPos + 172 && !menu.craftingMode) {
                 menu.filter = "";
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
+                longSearchBox.setFocus(true);
             }
         }
         return super.mouseClicked(pMouseX, pMouseY, pButton);
@@ -430,6 +431,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -442,8 +444,15 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     private class ToggleLockButton extends ImageButton {
 
+        private final MutableComponent componentA;
+        private final MutableComponent componentB;
+        private final MutableComponent componentC;
+
         public ToggleLockButton(int pX, int pY) {
             super(pX, pY, 19, 16, 67, 215, GUI_IMG, pButton -> toggleLock());
+            componentA = Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
+            componentB = Component.translatable("bhs.GUI.owner", "§c" + ownerName);
+            componentC = Component.translatable("bhs.GUI.owner", ownerName);
         }
 
         @Override
@@ -459,17 +468,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
         @Override
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-            List<FormattedCharSequence> list = new ArrayList<>();
-            UUID owner = menu.owner;
-            UUID user = menu.player.getUUID();
-            if (owner.equals(user)) {
-                list.add(Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName()).getVisualOrderText());
-            } else if (ControlPanelScreen.this.menu.locked) {
-                list.add(Component.translatable("bhs.GUI.owner", "§c" + ownerName).getVisualOrderText());
-            } else {
-                list.add(Component.translatable("bhs.GUI.owner", ownerName).getVisualOrderText());
-            }
-            ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
+            if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
+            else if (menu.locked) renderTooltip(pPoseStack, componentB, pMouseX, pMouseY);
+            else renderTooltip(pPoseStack, componentC, pMouseX, pMouseY);
         }
     }
 
@@ -480,6 +481,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -487,10 +489,10 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             int uOffset = this.isHoveredOrFocused() ? 221 : 202;
             int vOffset = menu.sortType * 16;
             blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
-            if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             list.add(Component.translatable(getSortKey(menu.sortType)).getVisualOrderText());
@@ -499,7 +501,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
             list.add(Component.translatable("bhs.GUI.line").getVisualOrderText());
             list.add(Component.translatable("bhs.GUI.sort.tip1").getVisualOrderText());
             list.add(Component.translatable("bhs.GUI.sort.tip2").getVisualOrderText());
-            ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
+            renderTooltip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
 
@@ -510,6 +512,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -522,11 +525,26 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
 
     private class ChannelButton extends ImageButton {
 
+        private final List<FormattedCharSequence> tips = new ArrayList<>();
+
         public ChannelButton(int pX, int pY) {
             super(pX, pY, 19, 16, 48, 215, GUI_IMG, pButton -> channelButtonPress());
+            if (menu.channelOwner.equals(menu.player.getUUID())) {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§a" + menu.channel.getName()).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
+            else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§c" + menu.channel.getName()).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
+            else {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", menu.channel.getName()).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -537,21 +555,16 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-            List<FormattedCharSequence> list = new ArrayList<>();
-            String flag = "";
-            if (menu.channelOwner.equals(menu.player.getUUID())) flag = "§a";
-            else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) flag = "§c";
-            list.add(Component.translatable("bhs.GUI.channel.tip1", flag + menu.channel.getName()).getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.channel.tip2",
-                    flag + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
-            ControlPanelScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
+            renderTooltip(pPoseStack, tips, pMouseX, pMouseY);
         }
     }
 
     @Override
     public void onClose() {
         NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
+        ((ClientChannel) menu.channel).removeListener();
         super.onClose();
     }
 }

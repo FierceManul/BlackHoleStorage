@@ -178,11 +178,11 @@ jar {
     manifest {
         attributes([
                 "Specification-Title": "${modid}",
-                "Specification-Vendor": "blackholestorage authors",
+                "Specification-Vendor": "Fierce Manul",
                 "Specification-Version": "1", // We are version 1 of ourselves
                 "Implementation-Title": project.name,
                 "Implementation-Version": "${mod_version}-${mc_version}",
-                "Implementation-Vendor": "blackholestorage",
+                "Implementation-Vendor": "Fierce Manul",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }

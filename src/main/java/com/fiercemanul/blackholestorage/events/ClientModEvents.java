@@ -1,6 +1,7 @@
 package com.fiercemanul.blackholestorage.events;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
+import com.fiercemanul.blackholestorage.gui.ActivePortScreen;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectScreen;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
 import com.fiercemanul.blackholestorage.gui.PassivePortScreen;
@@ -40,6 +41,7 @@ public class ClientModEvents {
             MenuScreens.register(BlackHoleStorage.CONTROL_PANEL_MENU.get(), ControlPanelScreen::new);
             MenuScreens.register(BlackHoleStorage.CHANNEL_SELECT_MENU.get(), ChannelSelectScreen::new);
             MenuScreens.register(BlackHoleStorage.PASSIVE_PORT_MENU.get(), PassivePortScreen::new);
+            MenuScreens.register(BlackHoleStorage.ACTIVE_PORT_MENU.get(), ActivePortScreen::new);
         });
     }
 }

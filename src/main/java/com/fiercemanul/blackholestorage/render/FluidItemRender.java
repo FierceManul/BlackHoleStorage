@@ -24,18 +24,7 @@ import org.lwjgl.opengl.GL11;
 @OnlyIn(Dist.CLIENT)
 public final class FluidItemRender {
 
-    //TODO: 这是一份从AE2扣来的代码，人家不仅仅是拿来渲染流体，后期要精简
-
-    // This assumption is obviously bogus, but currently all textures are this size,
-    // and it's impossible to get the texture size from an already loaded texture.
-    // The coordinates will still be correct when a resource pack provides bigger textures as long
-    // as each texture element is still positioned at the same relative position
-    public static final int DEFAULT_TEXTURE_WIDTH = 256;
-    public static final int DEFAULT_TEXTURE_HEIGHT = 256;
-
     private final ResourceLocation texture;
-    // This texture size is only used to convert the source rectangle into uv coordinates (which are [0,1] and work
-    // with textures of any size at runtime).
     private final int referenceWidth;
     private final int referenceHeight;
     private int r = 255;
@@ -46,43 +35,12 @@ public final class FluidItemRender {
     private Rect2i destRect = new Rect2i(0, 0, 0, 0);
     private boolean blending = true;
 
-    FluidItemRender(ResourceLocation texture, int referenceWidth, int referenceHeight) {
+    public FluidItemRender(ResourceLocation texture, int referenceWidth, int referenceHeight) {
         this.texture = texture;
         this.referenceWidth = referenceWidth;
         this.referenceHeight = referenceHeight;
     }
 
-    /**
-     * Creates a blitter where the source rectangle is in relation to a 256x256 pixel texture.
-     */
-    public static FluidItemRender texture(ResourceLocation file) {
-        return texture(file, DEFAULT_TEXTURE_WIDTH, DEFAULT_TEXTURE_HEIGHT);
-    }
-
-    /**
-     * Creates a blitter where the source rectangle is in relation to a 256x256 pixel texture.
-     */
-    public static FluidItemRender texture(String file) {
-        return texture(file, DEFAULT_TEXTURE_WIDTH, DEFAULT_TEXTURE_HEIGHT);
-    }
-
-    /**
-     * Creates a blitter where the source rectangle is in relation to a texture of the given size.
-     */
-    public static FluidItemRender texture(ResourceLocation file, int referenceWidth, int referenceHeight) {
-        return new FluidItemRender(file, referenceWidth, referenceHeight);
-    }
-
-    /**
-     * Creates a blitter where the source rectangle is in relation to a texture of the given size.
-     */
-    public static FluidItemRender texture(String file, int referenceWidth, int referenceHeight) {
-        return new FluidItemRender(new ResourceLocation("ae2", "textures/" + file), referenceWidth, referenceHeight);
-    }
-
-    /**
-     * Creates a blitter from a texture atlas sprite.
-     */
     public static FluidItemRender sprite(TextureAtlasSprite sprite) {
         // We use this convoluted method to convert from UV in the range of [0,1] back to pixel values with a
         // fictitious reference size of a large integer. This is converted back to UV later when we actually blit.
@@ -97,33 +55,6 @@ public final class FluidItemRender {
         );
     }
 
-    public FluidItemRender copy() {
-        FluidItemRender result = new FluidItemRender(texture, referenceWidth, referenceHeight);
-        result.srcRect = srcRect;
-        result.destRect = destRect;
-        result.r = r;
-        result.g = g;
-        result.b = b;
-        result.a = a;
-        return result;
-    }
-
-    public int getSrcX() {
-        return srcRect == null ? 0 : srcRect.getX();
-    }
-
-    public int getSrcY() {
-        return srcRect == null ? 0 : srcRect.getY();
-    }
-
-    public int getSrcWidth() {
-        return srcRect == null ? destRect.getWidth() : srcRect.getWidth();
-    }
-
-    public int getSrcHeight() {
-        return srcRect == null ? destRect.getHeight() : srcRect.getHeight();
-    }
-
     /**
      * Use the given rectangle from the texture (in pixels assuming a 256x256 texture size).
      */
@@ -132,57 +63,12 @@ public final class FluidItemRender {
         return this;
     }
 
-    public FluidItemRender srcWidth(int w) {
-        this.srcRect = new Rect2i(srcRect.getX(), srcRect.getY(), w, srcRect.getHeight());
-        return this;
-    }
-
-    public FluidItemRender srcHeight(int h) {
-        this.srcRect = new Rect2i(srcRect.getX(), srcRect.getY(), srcRect.getWidth(), h);
-        return this;
-    }
-
-    /**
-     * Use the given rectangle from the texture (in pixels assuming a 256x256 texture size).
-     */
-    public FluidItemRender src(Rect2i rect) {
-        return src(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
-    }
-
     /**
      * Draw into the rectangle defined by the given coordinates.
      */
     public FluidItemRender dest(int x, int y, int w, int h) {
         this.destRect = new Rect2i(x, y, w, h);
         return this;
-    }
-
-    /**
-     * Draw at the given x,y coordinate and use the source rectangle size as the destination rectangle size.
-     */
-    public FluidItemRender dest(int x, int y) {
-        return dest(x, y, 0, 0);
-    }
-
-    /**
-     * Draw into the given rectangle.
-     */
-    public FluidItemRender dest(Rect2i rect) {
-        return dest(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
-    }
-
-    public Rect2i getDestRect() {
-        int x = destRect.getX();
-        int y = destRect.getY();
-        int w = 0, h = 0;
-        if (destRect.getWidth() != 0 && destRect.getHeight() != 0) {
-            w = destRect.getWidth();
-            h = destRect.getHeight();
-        } else if (srcRect != null) {
-            w = srcRect.getWidth();
-            h = srcRect.getHeight();
-        }
-        return new Rect2i(x, y, w, h);
     }
 
     public FluidItemRender color(float r, float g, float b) {
@@ -195,10 +81,6 @@ public final class FluidItemRender {
     public FluidItemRender opacity(float a) {
         this.a = (int) (Mth.clamp(a, 0, 1) * 255);
         return this;
-    }
-
-    public FluidItemRender color(float r, float g, float b, float a) {
-        return color(r, g, b).opacity(a);
     }
 
     /**
@@ -219,12 +101,6 @@ public final class FluidItemRender {
         float b = (packedRgb & 255) / 255.0F;
 
         return color(r, g, b);
-    }
-
-    public void blit(int zIndex) {
-        // If we're not using a specific pose stack for transforms, we pass an empty
-        // one to just get an identity transform
-        blit(new PoseStack(), zIndex);
     }
 
     public void blit(PoseStack poseStack, int zIndex) {

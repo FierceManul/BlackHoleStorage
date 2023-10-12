@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.components.LockIconButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -14,6 +13,7 @@ import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -24,9 +24,9 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @OnlyIn(Dist.CLIENT)
 public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> {
@@ -60,6 +60,7 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void render(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
         this.renderBackground(pPoseStack);
         super.render(pPoseStack, pMouseX, pMouseY, pPartialTick);
@@ -67,6 +68,7 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void renderBg(PoseStack poseStack, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, GUI_IMG);
         this.blit(poseStack, this.leftPos, this.topPos, 0, 0, imageWidth, imageHeight);
@@ -113,11 +115,8 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void renderLabels(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-    }
-
-    private void renderToolTip(PoseStack pPoseStack, List<? extends FormattedCharSequence> pTooltips, int pMouseX, int pMouseY) {
-        super.renderTooltip(pPoseStack, pTooltips, pMouseX, pMouseY);
     }
 
     private class FaceButton extends ImageButton {
@@ -132,6 +131,7 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -145,14 +145,22 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
 
     private class ToggleLockButton extends ImageButton {
 
+        private final MutableComponent componentA;
+        private final MutableComponent componentB;
+        private final MutableComponent componentC;
+
         public ToggleLockButton(int pX, int pY) {
             super(pX, pY, 17, 17, 202, 102, GUI_IMG, pButton -> {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 6);
                 menu.locked = !menu.locked;
             });
+            componentA = Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
+            componentB = Component.translatable("bhs.GUI.owner", "§c" + ownerName);
+            componentC = Component.translatable("bhs.GUI.owner", ownerName);
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -164,29 +172,37 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-            List<FormattedCharSequence> list = new ArrayList<>();
-            UUID owner = menu.owner;
-            UUID user = menu.player.getUUID();
-            if (owner.equals(user)) {
-                list.add(Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName()).getVisualOrderText());
-            } else if (menu.locked) {
-                list.add(Component.translatable("bhs.GUI.owner", "§c" + ownerName).getVisualOrderText());
-            } else {
-                list.add(Component.translatable("bhs.GUI.owner", ownerName).getVisualOrderText());
-            }
-            PassivePortScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
+            if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
+            else if (menu.locked) renderTooltip(pPoseStack, componentB, pMouseX, pMouseY);
+            else renderTooltip(pPoseStack, componentC, pMouseX, pMouseY);
         }
     }
 
     private class ChannelButton extends ImageButton {
 
+        private final List<FormattedCharSequence> tips = new ArrayList<>();
+
         public ChannelButton(int pX, int pY) {
             super(pX, pY, 17, 17, 202, 136, GUI_IMG, pButton ->
                     minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 7));
+            if (menu.channelOwner.equals(menu.player.getUUID())) {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§a" + menu.channelName).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
+            else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§c" + menu.channelName).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
+            else {
+                tips.add(Component.translatable("bhs.GUI.channel.tip1", menu.channelName).getVisualOrderText());
+                tips.add(Component.translatable("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+            }
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -197,15 +213,9 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-            List<FormattedCharSequence> list = new ArrayList<>();
-            String flag = "";
-            if (menu.channelOwner.equals(menu.player.getUUID())) flag = "§a";
-            else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) flag = "§c";
-            list.add(Component.translatable("bhs.GUI.channel.tip1", flag + menu.channelName).getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.channel.tip2",
-                    flag + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
-            PassivePortScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
+            renderTooltip(pPoseStack, tips, pMouseX, pMouseY);
         }
     }
 }

@@ -1,0 +1,90 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "blackholestorage:active_port",
+          "functions": [
+            {
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "owner",
+                  "target": "BlockEntityTag.owner",
+                  "op": "replace"
+                },
+                {
+                  "source": "locked",
+                  "target": "BlockEntityTag.locked",
+                  "op": "replace"
+                },
+                {
+                  "source": "channel",
+                  "target": "BlockEntityTag.channel",
+                  "op": "replace"
+                },
+                {
+                  "source": "northPort",
+                  "target": "BlockEntityTag.northPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "southPort",
+                  "target": "BlockEntityTag.southPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "westPort",
+                  "target": "BlockEntityTag.westPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "eastPort",
+                  "target": "BlockEntityTag.eastPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "downPort",
+                  "target": "BlockEntityTag.downPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "upPort",
+                  "target": "BlockEntityTag.upPort",
+                  "op": "replace"
+                },
+                {
+                  "source": "rate",
+                  "target": "BlockEntityTag.rate",
+                  "op": "replace"
+                }
+              ]
+            },
+            {
+              "function": "minecraft:copy_state",
+              "block": "blackholestorage:active_port",
+              "properties": [
+                "north",
+                "south",
+                "east",
+                "west",
+                "up",
+                "down"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package com.fiercemanul.blackholestorage;
 
 import com.fiercemanul.blackholestorage.block.*;
+import com.fiercemanul.blackholestorage.gui.ActivePortMenu;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectMenu;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import com.fiercemanul.blackholestorage.gui.PassivePortMenu;
@@ -55,7 +56,8 @@ public class BlackHoleStorage {
                     "passive_port", () -> new PassivePortBlockItem(PASSIVE_PORT.get(), new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
     public static final RegistryObject<Block>
             ACTIVE_PORT = BLOCKS.register("active_port", ActivePortBlock::new);
-    public static final RegistryObject<BlockEntityType<ActivePortBlockEntity>> ACTIVE_PORT_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register(
+    public static final RegistryObject<BlockEntityType<ActivePortBlockEntity>>
+            ACTIVE_PORT_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register(
             "active_port", () -> BlockEntityType.Builder.of(ActivePortBlockEntity::new, ACTIVE_PORT.get()).build(null)
     );
     public static final RegistryObject<Item>
@@ -91,6 +93,8 @@ public class BlackHoleStorage {
             CHANNEL_SELECT_MENU = MENU_TYPE.register("channel_select_menu", () -> IForgeMenuType.create(ChannelSelectMenu::new));
     public static final RegistryObject<MenuType<PassivePortMenu>>
             PASSIVE_PORT_MENU = MENU_TYPE.register("passive_port_menu", () -> IForgeMenuType.create(PassivePortMenu::new));
+    public static final RegistryObject<MenuType<ActivePortMenu>>
+            ACTIVE_PORT_MENU = MENU_TYPE.register("active_port_menu", () -> IForgeMenuType.create(ActivePortMenu::new));
 
 
     public BlackHoleStorage() {

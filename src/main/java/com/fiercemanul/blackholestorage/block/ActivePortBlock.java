@@ -1,9 +1,12 @@
 package com.fiercemanul.blackholestorage.block;
 
+import com.fiercemanul.blackholestorage.BlackHoleStorage;
+import com.fiercemanul.blackholestorage.gui.ActivePortMenuProvider;
+import com.fiercemanul.blackholestorage.gui.ChannelSelectMenuProvider;
+import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.*;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -15,6 +18,8 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -24,12 +29,18 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, EntityBlock {
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.function.Function;
+
+public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
     public static final BooleanProperty SOUTH = BlockStateProperties.SOUTH;
@@ -38,6 +49,7 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     public static final BooleanProperty UP = BlockStateProperties.UP;
     public static final BooleanProperty DOWN = BlockStateProperties.DOWN;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    private final ImmutableMap<BlockState, VoxelShape> shapesCache;
 
     public ActivePortBlock() {
         super(Properties
@@ -57,12 +69,24 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
                 .setValue(DOWN, Boolean.FALSE)
                 .setValue(WATERLOGGED, Boolean.FALSE)
         );
+        this.shapesCache = this.getShapeForEachState(ActivePortBlock::calculateShape);
     }
 
-    @NotNull
+    private static VoxelShape calculateShape(BlockState state) {
+        VoxelShape voxelshape = Block.box(2.0D, 2.0D, 2.0D, 14.0D, 14.0D, 14.0D);
+        if (state.getValue(NORTH)) voxelshape = Shapes.or(voxelshape, Block.box(5, 5, 0, 11, 11, 2));
+        if (state.getValue(SOUTH)) voxelshape = Shapes.or(voxelshape, Block.box(5, 5, 14, 11, 11, 16));
+        if (state.getValue(WEST)) voxelshape = Shapes.or(voxelshape, Block.box(0, 5, 5, 2, 11, 11));
+        if (state.getValue(EAST)) voxelshape = Shapes.or(voxelshape, Block.box(14, 5, 5, 16, 11, 11));
+        if (state.getValue(DOWN)) voxelshape = Shapes.or(voxelshape, Block.box(5, 0, 5, 11, 2, 11));
+        if (state.getValue(UP)) voxelshape = Shapes.or(voxelshape, Block.box(5, 14, 5, 11, 16, 11));
+        return voxelshape;
+    }
+
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter getter, BlockPos pos, CollisionContext context) {
-        return Block.box(2.0D, 2.0D, 2.0D, 14.0D, 14.0D, 14.0D);
+    @ParametersAreNonnullByDefault
+    public @NotNull VoxelShape getShape(BlockState state, BlockGetter getter, BlockPos pos, CollisionContext context) {
+        return shapesCache.get(state);
     }
 
     @Override
@@ -71,8 +95,21 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     }
 
     @Override
+    @ParametersAreNonnullByDefault
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter getter, BlockPos pos) {
+        return true;
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ActivePortBlockEntity(pos, state);
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
+        return createTickerHelper(pBlockEntityType, BlackHoleStorage.ACTIVE_PORT_BLOCK_ENTITY.get(), ActivePortBlockEntity::tick);
     }
 
 
@@ -85,8 +122,7 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     }
 
     @Override
-    @NotNull
-    public FluidState getFluidState(BlockState state) {
+    public @NotNull FluidState getFluidState(BlockState state) {
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
@@ -94,7 +130,8 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     //外观相关
 
     @Override
-    public RenderShape getRenderShape(BlockState pState) {
+    @ParametersAreNonnullByDefault
+    public @NotNull RenderShape getRenderShape(BlockState pState) {
         return RenderShape.MODEL;
     }
 
@@ -102,17 +139,59 @@ public class ActivePortBlock extends Block implements SimpleWaterloggedBlock, En
     //互动
 
     @Override
+    @ParametersAreNonnullByDefault
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
         if (pPlacer instanceof ServerPlayer player && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
-            //ActivePortBlockEntity blockEntity = (ActivePortBlockEntity) pLevel.getBlockEntity(pPos);
-            //if (blockEntity != null) blockEntity.setOwner(player.getUUID());
+            ActivePortBlockEntity blockEntity = (ActivePortBlockEntity) pLevel.getBlockEntity(pPos);
+            if (blockEntity != null) blockEntity.setOwner(player.getUUID());
         }
     }
 
     @Override
-    public InteractionResult use(BlockState pState, Level level, BlockPos pPos, Player player, InteractionHand pHand, BlockHitResult pHit) {
+    @ParametersAreNonnullByDefault
+    public @NotNull InteractionResult use(BlockState pState, Level level, BlockPos pPos, Player player, InteractionHand pHand, BlockHitResult pHit) {
+        if (!level.isClientSide && !player.isSpectator()) {
+            if (level.getBlockEntity(pPos) instanceof ActivePortBlockEntity activePort) {
 
+                if (activePort.hasUser()) {
+                    ((ServerPlayer) player).sendSystemMessage(Component.translatable("blackholestorage.tip.using"), true);
+                    return InteractionResult.FAIL;
+                }
 
+                if (activePort.getOwner() == null) {
+                    activePort.setOwner(player.getUUID());
+                    activePort.setLocked(false);
+                }
+
+                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {});
+                else {
+                    Vec3 vec3 = pHit.getLocation().subtract(pPos.getX(), pPos.getY(), pPos.getZ());
+                    Direction direction;
+                    if (vec3.z <= 0.125) direction = Direction.NORTH;
+                    else if (vec3.z >= 0.875) direction = Direction.SOUTH;
+                    else if (vec3.x <= 0.125) direction = Direction.WEST;
+                    else if (vec3.x >= 0.875) direction = Direction.EAST;
+                    //else if (vec3.y <= 0.125) direction = Direction.DOWN;
+                    else if (vec3.y >= 0.875) direction = Direction.UP;
+                    else direction = Direction.DOWN;
+                    NetworkHooks.openScreen((ServerPlayer) player, new ActivePortMenuProvider(activePort), buf -> {
+                        buf.writeUUID(activePort.getOwner());
+                        buf.writeBoolean(activePort.isLocked());
+                        buf.writeBlockPos(pPos);
+                        buf.writeUUID(activePort.getChannelInfo().owner());
+                        buf.writeUtf(activePort.getChannelName());
+                        buf.writeNbt(activePort.northPort.toNbt());
+                        buf.writeNbt(activePort.southPort.toNbt());
+                        buf.writeNbt(activePort.westPort.toNbt());
+                        buf.writeNbt(activePort.eastPort.toNbt());
+                        buf.writeNbt(activePort.downPort.toNbt());
+                        buf.writeNbt(activePort.upPort.toNbt());
+                        buf.writeInt(activePort.rate);
+                        buf.writeInt(direction.get3DDataValue());
+                    });
+                }
+            }
+        }
         return InteractionResult.SUCCESS;
     }
 }

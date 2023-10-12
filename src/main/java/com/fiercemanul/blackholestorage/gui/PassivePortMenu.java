@@ -19,8 +19,8 @@ import java.util.UUID;
 
 public class PassivePortMenu extends AbstractContainerMenu {
 
-    public final Player player;
-    public final UUID owner;
+    protected final Player player;
+    protected final UUID owner;
     protected boolean locked;
     public final PassivePortBlockEntity passivePort;
     public final BlockPos blockPos;
@@ -88,7 +88,6 @@ public class PassivePortMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@NotNull Player pPlayer) {
-
         return !passivePort.isRemoved() &&
                 player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
     }

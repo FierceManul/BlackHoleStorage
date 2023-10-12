@@ -1,27 +1,19 @@
 package com.fiercemanul.blackholestorage.block;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
-import com.fiercemanul.blackholestorage.channel.ChannelInfo;
-import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
-import com.fiercemanul.blackholestorage.gui.ChannelSelectMenu;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectMenuProvider;
 import com.fiercemanul.blackholestorage.gui.PassivePortMenuProvider;
+import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.SpawnPlacements;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -31,6 +23,7 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -40,11 +33,14 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
@@ -56,12 +52,12 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
     public static final BooleanProperty DOWN = BlockStateProperties.DOWN;
 
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    private final ImmutableMap<BlockState, VoxelShape> shapesCache;
 
     public PassivePortBlock() {
         super(Properties.of(Material.METAL)
                 .strength(30.0F, 1200.0F)
                 .sound(SoundType.NETHERITE_BLOCK)
-                .noOcclusion()
                 .lightLevel(value -> 15)
                 .isValidSpawn((state, getter, pos, entityType) -> false)
                 .isSuffocating((state, getter, pos) -> false)
@@ -75,6 +71,31 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
                 .setValue(DOWN, Boolean.TRUE)
                 .setValue(WATERLOGGED, Boolean.FALSE)
         );
+        this.shapesCache = this.getShapeForEachState(PassivePortBlock::calculateShape);
+    }
+
+    private static VoxelShape calculateShape(BlockState state) {
+        VoxelShape voxelshape = Shapes.or(
+                Block.box(0, 0, 0, 16, 3, 3),
+                Block.box(0, 0, 13, 16, 3, 16),
+                Block.box(0, 0, 3, 3, 3, 13),
+                Block.box(13, 0, 3, 16, 3, 13),
+                Block.box(0, 13, 0, 16, 16, 3),
+                Block.box(0, 13, 13, 16, 16, 16),
+                Block.box(0, 13, 3, 3, 16, 13),
+                Block.box(13, 13, 3, 16, 16, 13),
+                Block.box(0, 3, 0, 3, 13, 3),
+                Block.box(13, 3, 0, 16, 13, 3),
+                Block.box(13, 3, 13, 16, 13, 16),
+                Block.box(0, 3, 13, 3, 13, 16)
+        );
+        if (!state.getValue(NORTH)) voxelshape = Shapes.or(voxelshape, Block.box(3, 3, 0, 13, 13, 1));
+        if (!state.getValue(SOUTH)) voxelshape = Shapes.or(voxelshape, Block.box(3, 3, 14, 13, 13, 16));
+        if (!state.getValue(WEST)) voxelshape = Shapes.or(voxelshape, Block.box(0, 3, 3, 1, 13, 13));
+        if (!state.getValue(EAST)) voxelshape = Shapes.or(voxelshape, Block.box(14, 3, 3, 16, 13, 13));
+        if (!state.getValue(DOWN)) voxelshape = Shapes.or(voxelshape, Block.box(3, 0, 3, 13, 1, 13));
+        if (!state.getValue(UP)) voxelshape = Shapes.or(voxelshape, Block.box(3, 14, 3, 13, 16, 13));
+        return voxelshape;
     }
 
     @Override
@@ -82,27 +103,40 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
         builder.add(NORTH, SOUTH, WEST, EAST, UP, DOWN, WATERLOGGED);
     }
 
-
-    @Nullable
     @Override
+    @ParametersAreNonnullByDefault
+    public @NotNull VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+        return Shapes.block();
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public @NotNull VoxelShape getCollisionShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+        return shapesCache.get(pState);
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public @NotNull VoxelShape getOcclusionShape(BlockState pState, BlockGetter pLevel, BlockPos pPos) {
+        return shapesCache.get(pState);
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new PassivePortBlockEntity(pos, state);
     }
 
-    @Nullable
     @Override
+    @ParametersAreNonnullByDefault
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
         return createTickerHelper(pBlockEntityType, BlackHoleStorage.PASSIVE_PORT_BLOCK_ENTITY.get(), PassivePortBlockEntity::tick);
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public boolean propagatesSkylightDown(BlockState state, BlockGetter getter, BlockPos pos) {
         return true;
-    }
-
-    @Override
-    public boolean isValidSpawn(BlockState state, BlockGetter level, BlockPos pos, SpawnPlacements.Type type, EntityType<?> entityType) {
-        return false;
     }
 
 
@@ -129,15 +163,9 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
     //外观相关
 
     @Override
-    public boolean skipRendering(BlockState state, BlockState state1, Direction direction) {
-        return state1.is(this) || super.skipRendering(state, state1, direction);
-    }
-
-    @Override
     public RenderShape getRenderShape(BlockState pState) {
         return RenderShape.MODEL;
     }
-
 
 
     //互动
@@ -152,10 +180,10 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+    @ParametersAreNonnullByDefault
+    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide && !player.isSpectator()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof PassivePortBlockEntity passivePort) {
+            if (level.getBlockEntity(pos) instanceof PassivePortBlockEntity passivePort) {
 
                 if (passivePort.hasUser()) {
                     ((ServerPlayer) player).sendSystemMessage(Component.translatable("blackholestorage.tip.using"), true);
@@ -167,9 +195,8 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
                     passivePort.setLocked(false);
                 }
 
-                if (passivePort.getChannelInfo() == null)
-                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {
-                    });
+                if (passivePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {
+                });
                 else {
                     NetworkHooks.openScreen((ServerPlayer) player, new PassivePortMenuProvider(passivePort), buf -> {
                         buf.writeUUID(passivePort.getOwner());
@@ -182,5 +209,15 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
             }
         }
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void entityInside(BlockState pState, Level pLevel, BlockPos pPos, Entity pEntity) {
+        if (pLevel.isClientSide) return;
+        BlockEntity blockentity = pLevel.getBlockEntity(pPos);
+        if (blockentity instanceof PassivePortBlockEntity passivePort && pEntity instanceof ItemEntity itemEntity) {
+            passivePort.inhaleItem(itemEntity);
+        }
     }
 }

@@ -1,12 +1,14 @@
 package com.fiercemanul.blackholestorage.compat;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
+import com.fiercemanul.blackholestorage.gui.ActivePortScreen;
 import com.fiercemanul.blackholestorage.gui.ChannelSelectScreen;
 import com.fiercemanul.blackholestorage.gui.ControlPanelScreen;
 import com.fiercemanul.blackholestorage.gui.PassivePortScreen;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -80,6 +82,20 @@ public class CompatJei implements IModPlugin {
                 return rect2is;
             }
         });
+        registration.addGuiContainerHandler(ActivePortScreen.class, new IGuiContainerHandler<>() {
+            @Override
+            public List<Rect2i> getGuiExtraAreas(ActivePortScreen screen) {
+                List<Rect2i> rect2is = new ArrayList<>();
+                rect2is.add(new Rect2i(
+                        screen.getGuiLeft(),
+                        screen.getGuiTop(),
+                        screen.imageWidth,
+                        screen.imageHeight
+                ));
+                return rect2is;
+            }
+        });
     }
+
 
 }

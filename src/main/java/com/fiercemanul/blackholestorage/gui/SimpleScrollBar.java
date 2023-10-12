@@ -10,6 +10,8 @@ import net.minecraft.util.FastColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 @OnlyIn(Dist.CLIENT)
 public abstract class SimpleScrollBar extends AbstractWidget {
 
@@ -117,6 +119,7 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     abstract public void beforeRender();
 
     @Override
+    @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int pMouseX, int pMouseY, float pPartialTick) {
         this.beforeRender();
         if (!this.visible) return;
@@ -126,6 +129,7 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void updateNarration(NarrationElementOutput pNarrationElementOutput) {
         this.defaultButtonNarrationText(pNarrationElementOutput);
     }

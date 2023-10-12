@@ -1,7 +1,6 @@
 package com.fiercemanul.blackholestorage.channel;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;

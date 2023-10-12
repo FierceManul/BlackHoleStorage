@@ -7,37 +7,26 @@ import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BeaconBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.UUID;
 
 import static com.fiercemanul.blackholestorage.BlackHoleStorage.PASSIVE_PORT_BLOCK_ENTITY;
@@ -56,10 +45,9 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
     private boolean up = true;
     private boolean down = true;
     private boolean waterlogged = false;
-    @Nullable
-    private ServerPlayer user;
+    private @Nullable ServerPlayer user;
 
-    private LazyOptional<IItemHandler> capability = LazyOptional.of(() -> channel);
+    private LazyOptional<?> capability = LazyOptional.of(() -> channel);
 
 
     public PassivePortBlockEntity(BlockPos pos, BlockState state) {
@@ -83,6 +71,7 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void saveAdditional(CompoundTag pTag) {
         if (owner != null) {
             pTag.putUUID("owner", owner);
@@ -114,7 +103,7 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
         this.setChanged();
     }
 
-    public void setUser(ServerPlayer user) {
+    public void setUser(@Nullable ServerPlayer user) {
         this.user = user;
     }
 
@@ -228,5 +217,16 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
             return capability.cast();
         }
         return super.getCapability(cap, side);
+    }
+
+    public void inhaleItem(ItemEntity itemEntity) {
+        if (channel.isRemoved()) return;
+        ItemStack itemStack = itemEntity.getItem();
+        channel.addItem(itemStack);
+        if (!itemStack.isEmpty()) {
+            BlockPos blockPos = getBlockPos();
+            itemEntity.teleportTo(blockPos.getX() + 0.5, blockPos.getY() - 0.26, blockPos.getZ() + 0.5);
+            itemEntity.setDeltaMovement(0, -0.1, 0);
+        }
     }
 }

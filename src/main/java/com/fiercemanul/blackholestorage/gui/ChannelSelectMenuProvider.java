@@ -8,6 +8,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 public final class ChannelSelectMenuProvider implements MenuProvider {
 
     private final IChannelTerminal terminal;
@@ -21,6 +23,7 @@ public final class ChannelSelectMenuProvider implements MenuProvider {
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
         return new ChannelSelectMenu(pContainerId, pPlayer, terminal);
     }
