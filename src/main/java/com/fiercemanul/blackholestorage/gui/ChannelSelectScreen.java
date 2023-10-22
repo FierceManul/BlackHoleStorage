@@ -11,7 +11,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,15 +20,14 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.PacketDistributor;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMenu> {
+public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
     private static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/channel_select.png");
-    public final int imageWidth = 202;
-    public final int imageHeight = 249;
     private EditBox searchBox;
     private EditBox nameBox;
     private ChannelScrollBar scrollBar;
@@ -70,6 +68,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void render(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
         this.renderBackground(pPoseStack);
         super.render(pPoseStack, pMouseX, pMouseY, pPartialTick);
@@ -83,14 +82,11 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void renderBg(PoseStack poseStack, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, GUI_IMG);
         this.blit(poseStack, this.leftPos, this.topPos, 0, 0, imageWidth, 98);
         this.blit(poseStack, this.leftPos, this.topPos + 98, 0, 7, imageWidth, 151);
-    }
-
-    @Override
-    protected void renderLabels(PoseStack pPoseStack, int pMouseX, int pMouseY) {
     }
 
     private void renderToolTip(PoseStack pPoseStack, List<? extends FormattedCharSequence> pTooltips, int pMouseX, int pMouseY) {
@@ -129,9 +125,15 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         if (pButton == 1) {
             if (searchBox.isMouseOver(pMouseX, pMouseY)) {
                 searchBox.setValue("");
+                searchBox.setFocus(true);
+                searchBox.setEditable(true);
                 updateChannelList();
             }
-            if (nameBox.isMouseOver(pMouseX, pMouseY)) nameBox.setValue("");
+            if (nameBox.isMouseOver(pMouseX, pMouseY)) {
+                nameBox.setValue("");
+                nameBox.setFocus(true);
+                nameBox.setEditable(true);
+            }
         }
         return super.mouseClicked(pMouseX, pMouseY, pButton);
     }
@@ -208,12 +210,14 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void render(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             this.visible = buttonID + scrollAt < filterChannels.size();
             super.render(pPoseStack, pMouseX, pMouseY, pPartialTick);
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -243,6 +247,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -253,6 +258,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             list.add(Component.translatable("bhs.GUI.addChannel.tip1", nameBox.getValue()).getVisualOrderText());
@@ -274,6 +280,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -284,6 +291,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             if (channelManager.selectedChannelName.isEmpty()) {
@@ -313,6 +321,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -323,6 +332,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             if (channelManager.selectedChannelName.isEmpty()) {
@@ -351,6 +361,7 @@ public class ChannelSelectScreen extends AbstractContainerScreen<ChannelSelectMe
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);

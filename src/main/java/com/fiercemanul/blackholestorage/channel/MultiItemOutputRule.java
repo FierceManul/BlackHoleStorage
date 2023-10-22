@@ -7,7 +7,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
-import org.jetbrains.annotations.NotNull;
 
 public class MultiItemOutputRule extends Rule {
 
@@ -38,7 +37,7 @@ public class MultiItemOutputRule extends Rule {
     private boolean output(IItemHandler itemHandler, ServerChannel channel) {
         Item item = items.get(lastIndex);
         String itemId = Tools.getItemId(item);
-        if (channel.getRealItemAmount(itemId) == 0) return false;
+        if (!channel.hasItem(itemId)) return false;
         ItemStack testStack = new ItemStack(item, Integer.min(channel.getItemAmount(itemId), rate));
         ItemStack afterStack = itemHandler.insertItem(lastSlot, testStack, true);
         int count = testStack.getCount() - afterStack.getCount();

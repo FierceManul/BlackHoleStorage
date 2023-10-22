@@ -19,7 +19,7 @@ public final class InfoRule {
     public InfoRule(CompoundTag tag) {
         this.ruleType = RuleType.get(tag.getInt("type"));
         this.value = tag.getString("value");
-        this.rate = tag.getInt("rate");;
+        this.rate = tag.getInt("rate");
     }
 
     public CompoundTag toNbt() {
@@ -38,7 +38,8 @@ public final class InfoRule {
             case FORGE_ENERGY -> Component.translatable("bhs.GUI.rule.fe");
             case MOD_ITEM -> Component.translatable("bhs.GUI.rule.mod_item", value);
             case MOD_FLUID -> Component.translatable("bhs.GUI.rule.mod_fluid", value);
-            case ANY -> Component.translatable("bhs.GUI.rule.any");
+            case ANY_ITEM -> Component.translatable("bhs.GUI.rule.any_item");
+            case ANY_FLUID -> Component.translatable("bhs.GUI.rule.any_fluid");
         };
     }
 }

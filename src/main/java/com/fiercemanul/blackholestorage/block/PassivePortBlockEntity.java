@@ -204,19 +204,19 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        if (channel.isRemoved()) return super.getCapability(cap, side);
-        if (side == Direction.NORTH && !north) return super.getCapability(cap, side);
-        else if (side == Direction.SOUTH && !south) return super.getCapability(cap, side);
-        else if (side == Direction.WEST && !west) return super.getCapability(cap, side);
-        else if (side == Direction.EAST && !east) return super.getCapability(cap, side);
-        else if (side == Direction.UP && !up) return super.getCapability(cap, side);
-        else if (side == Direction.DOWN && !down) return super.getCapability(cap, side);
+        if (channel.isRemoved()) return LazyOptional.empty();
+        if (side == Direction.NORTH && !north) return LazyOptional.empty();
+        else if (side == Direction.SOUTH && !south) return LazyOptional.empty();
+        else if (side == Direction.WEST && !west) return LazyOptional.empty();
+        else if (side == Direction.EAST && !east) return LazyOptional.empty();
+        else if (side == Direction.UP && !up) return LazyOptional.empty();
+        else if (side == Direction.DOWN && !down) return LazyOptional.empty();
         else if (cap == ForgeCapabilities.ITEM_HANDLER
                 || cap == ForgeCapabilities.FLUID_HANDLER
                 || cap == ForgeCapabilities.ENERGY) {
             return capability.cast();
         }
-        return super.getCapability(cap, side);
+        return LazyOptional.empty();
     }
 
     public void inhaleItem(ItemEntity itemEntity) {

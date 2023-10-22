@@ -260,13 +260,13 @@ public class ServerChannelManager {
     private void sandChannelAdd(UUID channelOwner, String name, int id) {
         if (channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
             channelSelector.forEach((player, other) ->
-                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChanneltAddPack((byte) 2, name, id)));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelAddPack((byte) 2, name, id)));
         } else {
             channelSelector.forEach((player, other) -> {
                 if (player.getUUID().equals(channelOwner)) {
-                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChanneltAddPack((byte) 0, name, id));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelAddPack((byte) 0, name, id));
                 } else if (channelOwner.equals(other)) {
-                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChanneltAddPack((byte) 1, name, id));
+                    NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), new ChannelAddPack((byte) 1, name, id));
                 }
             });
         }

@@ -6,7 +6,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
-import org.jetbrains.annotations.NotNull;
 
 public class ItemInputRule extends Rule{
 
@@ -23,14 +22,21 @@ public class ItemInputRule extends Rule{
         blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, targetFace).ifPresent(itemHandler -> {
             if (!channel.canStorageItem(value)) return;
             if (worked(itemHandler, lastSlot, channel)) return;
-            lastSlot = 0;
             int maxSlots = itemHandler.getSlots();
-            for (int i = 0; i < maxSlots; i++) {
+            int a = lastSlot;
+            for (int i = a; i < maxSlots; i++) {
                 if (worked(itemHandler, i, channel)) {
                     lastSlot = i;
                     return;
                 }
             }
+            for (int i = 0; i < a; i++) {
+                if (worked(itemHandler, i, channel)) {
+                    lastSlot = i;
+                    return;
+                }
+            }
+            lastSlot = 0;
         });
     }
 

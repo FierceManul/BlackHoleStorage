@@ -26,11 +26,7 @@ public class ChannelPack {
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                ClientChannelManager.getInstance().fullUpdateChannel(tag);
-            });
-        });
+        context.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientChannelManager.getInstance().fullUpdateChannel(tag)));
         context.get().setPacketHandled(true);
     }
 }

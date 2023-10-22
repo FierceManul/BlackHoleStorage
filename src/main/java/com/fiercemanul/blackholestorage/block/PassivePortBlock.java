@@ -5,7 +5,6 @@ import com.fiercemanul.blackholestorage.gui.ChannelSelectMenuProvider;
 import com.fiercemanul.blackholestorage.gui.PassivePortMenuProvider;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -23,7 +22,6 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -163,7 +161,8 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
     //外观相关
 
     @Override
-    public RenderShape getRenderShape(BlockState pState) {
+    @ParametersAreNonnullByDefault
+    public @NotNull RenderShape getRenderShape(BlockState pState) {
         return RenderShape.MODEL;
     }
 
@@ -172,6 +171,7 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
 
 
     @Override
+    @ParametersAreNonnullByDefault
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
         if (pPlacer instanceof ServerPlayer player && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
             PassivePortBlockEntity blockEntity = (PassivePortBlockEntity) pLevel.getBlockEntity(pPos);

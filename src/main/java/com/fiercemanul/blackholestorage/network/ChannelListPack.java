@@ -34,11 +34,7 @@ public class ChannelListPack {
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                ClientChannelManager.getInstance().setChannelList(myChannels, otherChannels, publicChannels);
-            });
-        });
+        context.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientChannelManager.getInstance().setChannelList(myChannels, otherChannels, publicChannels)));
         context.get().setPacketHandled(true);
     }
 }

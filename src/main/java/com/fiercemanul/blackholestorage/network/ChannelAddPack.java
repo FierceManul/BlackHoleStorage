@@ -8,19 +8,19 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class ChanneltAddPack {
+public class ChannelAddPack {
 
     private final byte type;
     private final String name;
     private final int id;
 
-    public ChanneltAddPack(FriendlyByteBuf buf) {
+    public ChannelAddPack(FriendlyByteBuf buf) {
         this.type = buf.readByte();
         this.name = buf.readUtf();
         this.id = buf.readInt();
     }
 
-    public ChanneltAddPack(byte type, String name, int id) {
+    public ChannelAddPack(byte type, String name, int id) {
         this.type = type;
         this.name = name;
         this.id = id;

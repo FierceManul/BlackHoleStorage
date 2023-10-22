@@ -3,14 +3,19 @@ package com.fiercemanul.blackholestorage.gui;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.Config;
 import com.fiercemanul.blackholestorage.block.ControlPanelBlockEntity;
-import com.fiercemanul.blackholestorage.channel.*;
+import com.fiercemanul.blackholestorage.channel.Channel;
+import com.fiercemanul.blackholestorage.channel.ClientChannelManager;
+import com.fiercemanul.blackholestorage.channel.ServerChannel;
+import com.fiercemanul.blackholestorage.channel.ServerChannelManager;
 import com.fiercemanul.blackholestorage.network.ControlPanelMenuActionPack;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.fiercemanul.blackholestorage.util.Tools;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.recipebook.PlaceRecipe;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -18,11 +23,14 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
@@ -35,13 +43,14 @@ import net.minecraftforge.fluids.capability.wrappers.FluidBucketWrapper;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ControlPanelMenu extends AbstractContainerMenu {
+public class ControlPanelMenu extends AbstractContainerMenu implements PlaceRecipe<Integer> {
 
     protected final Player player;
     private final Level level;
@@ -62,9 +71,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public int channelID;
     public boolean craftingMode;
     public String filter;
-    public byte sortType = 0;
-    public byte viewType = 0;
+    public byte sortType;
+    public byte viewType;
     public boolean LShifting = false;
+    public Runnable setCraftMode = () -> {};
+    private CraftingRecipe lastCraftingRecipe = null;
 
 
     //客户端调用这个
@@ -153,16 +164,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         addSlots(player, player.getInventory());
     }
 
-    /*@Override
-    public void initializeContents(int pStateId, List<ItemStack> pItems, ItemStack pCarried) {
-        super.initializeContents(pStateId, pItems, pCarried);
-        if (level.isClientSide) dummyContainer.refreshContainer(true);
-    }*/
-
-
-
     //按钮相关
     @Override
+    @ParametersAreNonnullByDefault
     public boolean clickMenuButton(Player pPlayer, int pId) {
         switch (pId) {
             case 0 -> {
@@ -189,8 +193,20 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             case 3 -> reverseSort();
             case 4 -> changeViewType();
             case 5 -> openChannelScreen();
+            case 6 -> craftToChannel(1);
+            case 7 -> craftToChannel(8);
+            case 8 -> craftToChannel(64);
+            case 9 -> craftToChannel(512);
+            case 10 -> craftToInventory(1);
+            case 11 -> craftToInventory(8);
+            case 12 -> craftToInventory(64);
+            case 13 -> craftToInventory(512);
+            case 14 -> craftAndDrop(1);
+            case 15 -> craftAndDrop(8);
+            case 16 -> craftAndDrop(64);
+            case 17 -> craftAndDrop(512);
         }
-        return pId < 5;
+        return pId < 18;
     }
 
 
@@ -763,20 +779,24 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     private Slot getArmorSlot(Player player, Inventory inventory, EquipmentSlot equipmentslot, int slotId, int x, int y) {
         return new Slot(inventory, slotId, x, y) {
+            @Override
+            @ParametersAreNonnullByDefault
             public void set(ItemStack itemStack) {
                 ItemStack itemstack = this.getItem();
                 super.set(itemStack);
                 player.onEquipItem(equipmentslot, itemstack, itemStack);
             }
-
+            @Override
             public int getMaxStackSize() {
                 return 1;
             }
-
+            @Override
+            @ParametersAreNonnullByDefault
             public boolean mayPlace(ItemStack itemStack) {
                 return itemStack.canEquip(equipmentslot, player);
             }
-
+            @Override
+            @ParametersAreNonnullByDefault
             public boolean mayPickup(Player player1) {
                 ItemStack itemstack = this.getItem();
                 return (itemstack.isEmpty() || player1.isCreative() || !EnchantmentHelper.hasBindingCurse(itemstack)) && super.mayPickup(player1);
@@ -846,7 +866,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         public final ArrayList<String[]> sortedObject = new ArrayList<>();
         public final ArrayList<String[]> viewingObject = new ArrayList<>();
         public final HashMap<Integer, FluidStack> fluidStacks = new HashMap<>();
-        public ArrayList<String> formatCount = new ArrayList<>();
+        public final ArrayList<String> formatCount = new ArrayList<>();
 
         private double scrollTo = 0.0D;
 
@@ -1094,14 +1114,15 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     //覆写
 
     @Override
-    public void clicked(int pMouseX, int pMouseY, ClickType pClickType, Player pPlayer) {
-        if (pMouseX >= 51) {
+    @ParametersAreNonnullByDefault
+    public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
+        if (pSlotId >= 51) {
             //仅客户端能触发
             String[] object;
-            if (pMouseX - 51 < dummyContainer.viewingObject.size()) object = dummyContainer.viewingObject.get(pMouseX - 51);
+            if (pSlotId - 51 < dummyContainer.viewingObject.size()) object = dummyContainer.viewingObject.get(pSlotId - 51);
             else object = new String[]{"item", "minecraft:air"};
 
-            switch (pMouseY) {
+            switch (pButton) {
                 case 0 -> {
                     switch (pClickType) {
                         case QUICK_MOVE -> {
@@ -1169,11 +1190,27 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
             }
             //剩下的SWAP无视掉(hot bar的快捷键)
-        } else if (pMouseX != panelItemSlotIndex) super.clicked(pMouseX, pMouseY, pClickType, pPlayer);
+        }
+        else if (pSlotId >= 41 && pSlotId <= 49 && pClickType.equals(ClickType.QUICK_MOVE)) {
+            //合成格
+            ItemStack itemStack = slots.get(pSlotId).getItem();
+            if (pButton == 0) {
+                moveItemStackTo(itemStack, 9, 36, false);
+                if (!itemStack.isEmpty()) moveItemStackTo(itemStack, 0, 9, false);
+                slotsChanged(craftSlots);
+            }
+            else if (pButton == 1) {
+                channel.addItem(itemStack);
+                slotsChanged(craftSlots);
+            }
+            else super.clicked(pSlotId, pButton, pClickType, pPlayer);
+        }
+        else if (pSlotId != panelItemSlotIndex) super.clicked(pSlotId, pButton, pClickType, pPlayer);
     }
 
     @Override
-    public ItemStack quickMoveStack(Player player, int slotId) {
+    @ParametersAreNonnullByDefault
+    public @NotNull ItemStack quickMoveStack(Player player, int slotId) {
         //empty由于退出调用的奇怪循环
         ItemStack itemStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(slotId);
@@ -1196,11 +1233,12 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
                 slot.onQuickCraft(movingStack, itemStack);
             } else if (slotId >= 41 && slotId <= 49) {
+                //正常情况不会运行这里，因为上面已经拦下来了。
                 if (!this.moveItemStackTo(movingStack, 0, 36, false)) {
                     return ItemStack.EMPTY;
                 }
             } else {
-                BlackHoleStorage.LOGGER.warn("Ohh! Who trigger the quickMoveStack() when slotId >= 51 ?");
+                BlackHoleStorage.LOGGER.warn("Ohh! Who trigger the quickMoveStack() when slotId >= 51 in server side ?");
             }
             if (movingStack.isEmpty()) {
                 slot.set(ItemStack.EMPTY);
@@ -1219,11 +1257,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public boolean canTakeItemForPickAll(ItemStack itemStack, Slot slot) {
         return slot.index <= 49;
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public boolean stillValid(Player player) {
         if (channel.isRemoved()) {
             if (panelItemSlotIndex >= 0) {
@@ -1272,65 +1312,525 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
 
     //合成相关
-    protected static void slotChangedCraftingGrid(AbstractContainerMenu menu, Level level, Player player, CraftingContainer craftingContainer, ResultContainer resultContainer) {
-        if (!level.isClientSide) {
-            ServerPlayer serverplayer = (ServerPlayer) player;
-            ItemStack itemstack = ItemStack.EMPTY;
-            Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftingContainer, level);
-            if (optional.isPresent()) {
-                CraftingRecipe craftingrecipe = optional.get();
-                if (resultContainer.setRecipeUsed(level, serverplayer, craftingrecipe)) {
-                    itemstack = craftingrecipe.assemble(craftingContainer);
+
+    @Override
+    @ParametersAreNonnullByDefault
+    public void slotsChanged(Container container) {
+        if (level.isClientSide) return;
+        if (lastCraftingRecipe != null && lastCraftingRecipe.matches(craftSlots, level)) {
+            resultSlots.setRecipeUsed(level, (ServerPlayer) player, lastCraftingRecipe);
+            resultSlots.setItem(0, lastCraftingRecipe.assemble(craftSlots));
+            return;
+        }
+        Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftSlots, level);
+        if (optional.isPresent()) {
+            CraftingRecipe recipe = optional.get();
+            if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, recipe)) {
+                resultSlots.setItem(0, recipe.assemble(craftSlots));
+            }
+        } else resultSlots.setItem(0, ItemStack.EMPTY);
+    }
+
+    public void receivedRecipe(String recipeId, Map<String, Integer> itemsMap, boolean maxTransfer) {
+        craftingMode = true;
+        clearCraftSlots();
+
+        RecipeManager manager = level.getServer().getRecipeManager();
+        Optional<? extends Recipe<?>> optional = manager.byKey(new ResourceLocation(recipeId));
+        CraftingRecipe wantRecipe;
+        if (optional.isPresent() && optional.get() instanceof CraftingRecipe craftingRecipe) wantRecipe = craftingRecipe;
+        else return;
+
+        StackedContents stackedContents = new StackedContents();
+
+        //将够数的物品加入计数器并在表里移除
+        String[] itemsTemp = itemsMap.keySet().toArray(new String[0]);
+        for (String s : itemsTemp) {
+            if (channel.getRealItemAmount(s) >= itemsMap.get(s)) {
+                stackedContents.accountSimpleStack(new ItemStack(Tools.getItem(s), channel.getItemAmount(s)));
+                itemsMap.remove(s);
+            }
+        }
+
+        //数量不足的在这里继续加入可用的
+        if (itemsMap.size() > 0) {
+            HashSet<String> otherItemsId = new HashSet<>();
+            wantRecipe.getIngredients().forEach(ingredient -> {
+                ItemStack[] stacks = ingredient.getItems();
+                for (ItemStack stack : stacks) {
+                    if (stack.hasTag()) continue;
+                    boolean flag = false;
+                    for (String s : itemsMap.keySet()) {
+                        if (stack.getItem().equals(Tools.getItem(s))) {
+                            for (ItemStack itemStack : stacks) {
+                                if (!itemStack.hasTag()) otherItemsId.add(Tools.getItemId(itemStack.getItem()));
+                            }
+                            flag = true;
+                        }
+                    }
+                    if (flag) break;
+                }
+            });
+            otherItemsId.forEach(s -> {
+                if (channel.hasItem(s)) stackedContents.accountSimpleStack(new ItemStack(Tools.getItem(s), channel.getItemAmount(s)));
+            });
+        }
+
+        player.getInventory().fillStackedContents(stackedContents);
+        if (!stackedContents.canCraft(wantRecipe, null)) {
+            itemsMap.forEach((s, integer) -> stackedContents.accountSimpleStack(new ItemStack(Tools.getItem(s), integer)));
+        }
+        handleRecipeClicked(wantRecipe, stackedContents, maxTransfer);
+        player.getInventory().setChanged();
+
+        //解决合成表冲突
+        Optional<CraftingRecipe> optional1 = manager.getRecipeFor(RecipeType.CRAFTING, craftSlots, level);
+        if (optional1.isPresent()) {
+            CraftingRecipe currentRecipe = optional1.get();
+            if (currentRecipe != wantRecipe) {
+                if (wantRecipe.matches(craftSlots, level)) {
+                    if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, wantRecipe)) {
+                        lastCraftingRecipe = wantRecipe;
+                        resultSlots.setItem(0, wantRecipe.assemble(craftSlots));
+                    }
                 }
             }
-            resultContainer.setItem(50, itemstack);
-            menu.setRemoteSlot(50, itemstack);
-            serverplayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 50, itemstack));
+        } else resultSlots.setItem(0, ItemStack.EMPTY);
+    }
+
+    private void handleRecipeClicked(CraftingRecipe pRecipe, StackedContents stackedContents, boolean pPlaceAll) {
+        //原版的
+        boolean flag = pRecipe.matches(craftSlots, level);
+        int i = stackedContents.getBiggestCraftableStack(pRecipe, null);
+        if (flag) {
+            for(int j = 0; j < 9; j++) {
+                ItemStack itemstack = craftSlots.getItem(j);
+                if (!itemstack.isEmpty() && Math.min(i, itemstack.getMaxStackSize()) < itemstack.getCount() + 1) {
+                    return;
+                }
+            }
+        }
+
+        int j1 = this.getStackSize(pPlaceAll, i, flag);
+        IntList intlist = new IntArrayList();
+        stackedContents.canCraft(pRecipe, intlist, j1);
+        int k = j1;
+
+        for(int l : intlist) {
+            int i1 = StackedContents.fromStackingIndex(l).getMaxStackSize();
+            if (i1 < k) {
+                k = i1;
+            }
+        }
+
+        stackedContents.canCraft(pRecipe, intlist, k);
+        this.placeRecipe(3, 3, 9, pRecipe, intlist.iterator(), k);
+
+    }
+
+    private int getStackSize(boolean pPlaceAll, int pMaxPossible, boolean pRecipeMatches) {
+        //原版的
+        int i = 1;
+        if (pPlaceAll) {
+            i = pMaxPossible;
+        } else if (pRecipeMatches) {
+            i = 64;
+
+            for(int j = 0; j < 9; j++) {
+                ItemStack itemstack = craftSlots.getItem(j);
+                if (!itemstack.isEmpty() && i > itemstack.getCount()) {
+                    i = itemstack.getCount();
+                }
+            }
+
+            if (i < 64) {
+                ++i;
+            }
+        }
+
+        return i;
+    }
+
+    public void addItemToSlot(Iterator<Integer> pIngredients, int pSlot, int pMaxAmount, int pY, int pX) {
+        ItemStack itemstack = StackedContents.fromStackingIndex(pIngredients.next());
+
+        //以上是原版
+        if (!itemstack.hasTag()) {
+            String itemId = Tools.getItemId(itemstack.getItem());
+            if (channel.hasItem(itemId)) {
+                ItemStack channelStack = channel.takeItem(itemId, pMaxAmount);
+                craftSlots.setItem(pSlot, channelStack);
+                pMaxAmount-=channelStack.getCount();
+            }
+        }
+        //以下是原版
+
+        if (pMaxAmount > 0) {
+            for(int i = 0; i < pMaxAmount; ++i) {
+                moveItemToGrid(pSlot, itemstack);
+            }
+        }
+
+    }
+
+    private void moveItemToGrid(int pSlot, ItemStack pIngredient) {
+        //原版的
+        Inventory inventory = player.getInventory();
+        int i = inventory.findSlotMatchingUnusedItem(pIngredient);
+        if (i != -1) {
+            ItemStack itemstack = inventory.getItem(i).copy();
+            if (!itemstack.isEmpty()) {
+                if (itemstack.getCount() > 1) {
+                    inventory.removeItem(i, 1);
+                } else {
+                    inventory.removeItemNoUpdate(i);
+                }
+
+                itemstack.setCount(1);
+                if (craftSlots.getItem(pSlot).isEmpty()) {
+                    craftSlots.setItem(pSlot, itemstack);
+                } else {
+                    craftSlots.getItem(pSlot).grow(1);
+                }
+
+            }
         }
     }
 
-    public void slotsChanged(Container container) {
-        slotChangedCraftingGrid(this, level, this.player, this.craftSlots, this.resultSlots);
+    private void craftToChannel(int max) {
+        ItemStack resultItem = resultSlots.getItem(0).copy();
+        if (resultItem.isEmpty() || resultItem.hasTag()) return;
+
+        Recipe<?> recipe = resultSlots.getRecipeUsed();
+        if (recipe instanceof CraftingRecipe) {
+
+            int maxTry = max % resultItem.getCount() > 0 ? max / resultItem.getCount() + 1 : max / resultItem.getCount();
+
+            int count = resultItem.getCount() * doCraft(resultItem, maxTry);
+            long notInCount = count - channel.addItem(Tools.getItemId(resultItem.getItem()), count);
+            if (notInCount > 0) {
+                resultItem.setCount((int) notInCount);
+                pushToInventory(resultItem);
+            }
+        }
     }
 
-    @SuppressWarnings("unused")
-    public int getResultSlotIndex() {
-        return 50;
+    private void craftToInventory(int max) {
+        ItemStack resultItem = resultSlots.getItem(0).copy();
+        if (resultItem.isEmpty()) return;
+
+        Recipe<?> recipe = resultSlots.getRecipeUsed();
+        if (recipe instanceof CraftingRecipe) {
+
+            int maxTry1 = max % resultItem.getCount() > 0 ? max / resultItem.getCount() + 1 : max / resultItem.getCount();
+            int maxSpace = 0;
+            int maxStackSize = resultItem.getMaxStackSize();
+            for (int i = 0; i < 36; i++) {
+                ItemStack slotStack = player.getInventory().getItem(i);
+                if (slotStack.isEmpty()) maxSpace += maxStackSize;
+                else if (maxStackSize > 1 && ItemStack.isSameItemSameTags(resultItem, slotStack)) {
+                    maxSpace += maxStackSize - slotStack.getCount();
+                }
+            }
+            if (maxSpace <= 0) return;
+            int maxTry2 = maxSpace / maxStackSize;
+            int maxTry = Integer.min(maxTry1, maxTry2);
+
+            int count = resultItem.getCount() * doCraft(resultItem, maxTry);
+            resultItem.setCount(count);
+            savePushToInventory(resultItem);
+        }
     }
 
-    public void test() {}
+    private void craftAndDrop(int max) {
+        ItemStack resultItem = resultSlots.getItem(0).copy();
+        if (resultItem.isEmpty()) return;
 
+        Recipe<?> recipe = resultSlots.getRecipeUsed();
+        if (recipe instanceof CraftingRecipe) {
 
-    //未知用途
-    /*
-    public boolean recipeMatches(Recipe<? super CraftingContainer> recipe) {
-        return recipe.matches(this.craftSlots, this.player.level);
+            int maxTry = max % resultItem.getCount() > 0 ? max / resultItem.getCount() + 1 : max / resultItem.getCount();
+
+            int count = resultItem.getCount() * doCraft(resultItem, maxTry);
+            resultItem.setCount(count);
+            player.drop(resultItem, false);
+        }
     }
 
-    public void fillCraftSlotsStackedContents(StackedContents contents) {
-        this.craftSlots.fillStackedContents(contents);
+    /**
+     * 进行合成，此处未产出产物。
+     * @param resultItem 产物
+     * @param maxTry 最大合成次数
+     * @return 成功合成的次数
+     */
+    private int doCraft(ItemStack resultItem, int maxTry) {
+
+        int remainingCraftTry = maxTry - tryFastCraft(maxTry);
+
+        if (remainingCraftTry > 0) {
+            ArrayList<ItemStack> beforeItems = new ArrayList<>();
+            for (int i = 0; i < 9; i++) {
+                beforeItems.add(i, craftSlots.getItem(i).copy());
+            }
+            while (remainingCraftTry > 0) {
+                //补充物品
+                if (remainingCraftTry > 1) for (int i = 0; i < 9; i++) {
+                    ItemStack stack = craftSlots.getItem(i);
+                    int maxStackSize = stack.getMaxStackSize();
+                    if (stack.isEmpty() || maxStackSize == 1) continue;
+                    if (stack.getCount() < 2) {
+                        if (stack.hasTag()) fillStackFromInventory(stack);
+                        else {
+                            int channelAmount = channel.getItemAmount(Tools.getItemId(stack.getItem()));
+                            if (channelAmount >= maxStackSize - 1) {
+                                stack.setCount(maxStackSize);
+                                channel.removeItem(Tools.getItemId(stack.getItem()), maxStackSize - 1);
+                            } else if (channelAmount == 0) {
+                                fillStackFromInventory(stack);
+                            } else {
+                                channel.removeItem(Tools.getItemId(stack.getItem()), channelAmount);
+                                stack.setCount(channelAmount + 1);
+                                fillStackFromInventory(stack);
+                            }
+                        }
+                    }
+                }
+                //合成一次
+                slots.get(50).onTake(player, resultItem);
+                remainingCraftTry--;
+                if (!isSameResul(resultItem)) {
+                    if (!fixItems(resultItem, beforeItems)) break;
+                }
+            }
+        }
+        return maxTry - remainingCraftTry;
     }
 
-    public void clearCraftingContent() {
-        this.craftSlots.clearContent();
-        this.resultSlots.clearContent();
-    }
-    public int getGridWidth() {
-        return this.craftSlots.getWidth();
+    /**
+     * 进行快速合成，此处会扣掉频道材料，但未产出合成物。
+     * @param maxTry 最大合成次数
+     * @return 已经合成的次数
+     */
+    private int tryFastCraft(int maxTry) {
+        HashMap<Item, Integer> itemMap = new HashMap<>();
+        boolean canFastCraft = true;
+        for (int i = 0; i < 9; i++) {
+            ItemStack slotStack = craftSlots.getItem(i);
+            if (slotStack.isEmpty()) continue;
+            if (slotStack.hasTag() || slotStack.hasCraftingRemainingItem()) {
+                canFastCraft = false;
+                break;
+            }
+            if (itemMap.containsKey(slotStack.getItem())) itemMap.replace(slotStack.getItem(), itemMap.get(slotStack.getItem()) + 1);
+            else itemMap.put(slotStack.getItem(), 1);
+        }
+
+        if (canFastCraft) {
+            int canTry = maxTry;
+            for (Map.Entry<Item, Integer> entry : itemMap.entrySet()) {
+                Item item = entry.getKey();
+                Integer integer = entry.getValue();
+                int needAmount = integer * canTry;
+                int has = channel.getItemAmount(Tools.getItemId(item));
+                if (has >= needAmount) continue;
+                canTry = has / integer;
+                if (canTry == 0) break;
+            }
+            if (canTry > 0) {
+                for (Map.Entry<Item, Integer> entry : itemMap.entrySet()) {
+                    Item item = entry.getKey();
+                    Integer integer = entry.getValue();
+                    channel.removeItem(Tools.getItemId(item), (long) integer * canTry);
+                }
+            }
+            return canTry;
+        }
+        return 0;
     }
 
-    public int getGridHeight() {
-        return this.craftSlots.getHeight();
-    }
-    public int getSize() {
-        return 10;
+    /**
+     * 修复并补充物品到合成格，若返回失败应该中断合成。
+     * @param resultItem 期望结果
+     * @param beforeItems 期望合成格
+     * @return 是否成功
+     */
+    private boolean fixItems(ItemStack resultItem, ArrayList<ItemStack> beforeItems) {
+        //补充物品到合成格
+        for (int i = 0; i < 9; i++) {
+            ItemStack craftingStack = craftSlots.getItem(i);
+            ItemStack needStack = beforeItems.get(i);
+            if (ItemStack.isSameItemSameTags(craftingStack, needStack)) continue;
+            if (!craftingStack.isEmpty()) {
+                channel.addItem(craftingStack);
+                if (!craftingStack.isEmpty()) moveItemStackTo(craftingStack, 9, 36, false);
+                if (!craftingStack.isEmpty()) moveItemStackTo(craftingStack, 0, 9, false);
+                if (!craftingStack.isEmpty()) return false;
+            }
+            if (!needStack.isEmpty()) {
+                if (needStack.hasTag()) moveSameItemToCraftingSlot(i, needStack);
+                else {
+                    int channelHas = channel.getItemAmount(Tools.getItemId(needStack.getItem()));
+                    if (channelHas >= needStack.getMaxStackSize()) {
+                        craftSlots.setItem(i, channel.takeItem(Tools.getItemId(needStack.getItem()), needStack.getMaxStackSize()));
+                    } else if (channelHas == 0) {
+                        moveSameItemToCraftingSlot(i, needStack);
+                    } else {
+                        craftSlots.setItem(i, channel.takeItem(Tools.getItemId(needStack.getItem()), channelHas));
+                        fillStackFromInventory(craftSlots.getItem(i));
+                    }
+                }
+            }
+            if (isSameResul(resultItem)) return true;
+        }
+        //如补充后还是不可以合，就均摊一下合成槽物品。
+        if (!isSameResul(resultItem)) {
+            ArrayList<ItemStack> itemMark = new ArrayList<>();
+            ArrayList<ItemStack> itemAmount = new ArrayList<>();
+            beforeItems.forEach(beforeItem -> {
+                if (beforeItem.isEmpty()) return;
+                if (itemMark.size() == 0) {
+                    ItemStack inItem = beforeItem.copy();
+                    inItem.setCount(1);
+                    itemMark.add(inItem);
+                }
+                else {
+                    boolean flag = true;
+                    for (ItemStack itemStack : itemMark) {
+                        if (ItemStack.isSameItemSameTags(beforeItem, itemStack)) {
+                            itemStack.setCount(itemStack.getCount() + 1);
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        ItemStack inItem = beforeItem.copy();
+                        inItem.setCount(1);
+                        itemMark.add(inItem);
+                    }
+                }
+            });
+            for (int i = 0; i < 9; i++) {
+                ItemStack slotItem = craftSlots.getItem(i);
+                if (slotItem.isEmpty()) continue;
+                if (itemAmount.size() == 0) {
+                    ItemStack inItem = slotItem.copy();
+                    itemAmount.add(inItem);
+                }
+                else {
+                    boolean flag = true;
+                    for (ItemStack itemStack : itemAmount) {
+                        if (ItemStack.isSameItemSameTags(slotItem, itemStack)) {
+                            itemStack.setCount(itemStack.getCount() + slotItem.getCount());
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        ItemStack inItem = slotItem.copy();
+                        itemAmount.add(inItem);
+                    }
+                }
+                craftSlots.setItem(i, ItemStack.EMPTY);
+            }
+            for (int i = 0; i < 9; i++) {
+                ItemStack beforeStack = beforeItems.get(i);
+                if (beforeStack.isEmpty()) continue;
+                ItemStack p = ItemStack.EMPTY;
+                ItemStack amount = ItemStack.EMPTY;
+                for (ItemStack itemStack : itemMark) {
+                    if (ItemStack.isSameItemSameTags(beforeStack, itemStack)) {
+                        p = itemStack;
+                        break;
+                    }
+                }
+                for (ItemStack itemStack : itemAmount) {
+                    if (ItemStack.isSameItemSameTags(beforeStack, itemStack)) {
+                        amount = itemStack;
+                        break;
+                    }
+                }
+                if (p.isEmpty() || amount.isEmpty()) continue;
+                ItemStack newStack = beforeStack.copy();
+                int count = amount.getCount() / p.getCount();
+                newStack.setCount(count);
+                craftSlots.setItem(i, newStack);
+                amount.setCount(amount.getCount() - count);
+                p.setCount(p.getCount() - 1);
+            }
+        }
+        //返回是否成功
+        return isSameResul(resultItem);
     }
 
-    public RecipeBookType getRecipeBookType() {
-        return RecipeBookType.CRAFTING;
+    private void pushToInventory(ItemStack itemStack) {
+        moveItemStackTo(itemStack, 9, 36, false);
+        if (!itemStack.isEmpty()) moveItemStackTo(itemStack, 0, 9, false);
+        if (!itemStack.isEmpty()) player.drop(itemStack, false);
     }
 
-    public boolean shouldMoveToInventory(int i) {
-        return i != this.getResultSlotIndex();
-    }*/
+    private void savePushToInventory(ItemStack itemStack) {
+        int loops = itemStack.getCount() / itemStack.getMaxStackSize();
+        for (int i = 0; i < loops; i++) {
+            ItemStack newStack = itemStack.copy();
+            newStack.setCount(itemStack.getMaxStackSize());
+            itemStack.setCount(itemStack.getCount() - itemStack.getMaxStackSize());
+            pushToInventory(newStack);
+        }
+        if (itemStack.getCount() > 0) pushToInventory(itemStack);
+    }
+
+    private void fillStackFromInventory(ItemStack stack) {
+        int maxStackSize = stack.getMaxStackSize();
+        for (int i = 9; i < 36; i++) {
+            tryRefillFromSlot(stack, i);
+            if (stack.getCount() >= maxStackSize) break;
+        }
+        if (stack.getCount() < maxStackSize) for (int i = 0; i < 9; i++) {
+            tryRefillFromSlot(stack, i);
+            if (stack.getCount() >= maxStackSize) break;
+        }
+    }
+
+    private void tryRefillFromSlot(ItemStack itemStack, int slotId) {
+        if (ItemStack.isSameItemSameTags(itemStack, player.getInventory().getItem(slotId))) {
+            ItemStack otherStack = player.getInventory().getItem(slotId);
+            int needAmount = itemStack.getMaxStackSize() - itemStack.getCount();
+            if (otherStack.getCount() > needAmount) {
+                itemStack.setCount(itemStack.getMaxStackSize());
+                otherStack.setCount(otherStack.getCount() - needAmount);
+            } else {
+                itemStack.setCount(itemStack.getCount() + otherStack.getCount());
+                player.getInventory().setItem(slotId, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    private void moveSameItemToCraftingSlot(int slotIndex, ItemStack stack) {
+        //目标通常叠堆为一
+        boolean flag = true;
+        for (int i = 9; i < 36; i++) {
+            ItemStack otherStack = player.getInventory().getItem(i);
+            if (ItemStack.isSameItemSameTags(stack, otherStack)) {
+                craftSlots.setItem(slotIndex, otherStack);
+                player.getInventory().setItem(i, ItemStack.EMPTY);
+                flag = false;
+            }
+        }
+        if (flag) for (int i = 0; i < 9; i++) {
+            ItemStack otherStack = player.getInventory().getItem(i);
+            if (ItemStack.isSameItemSameTags(stack, otherStack)) {
+                craftSlots.setItem(slotIndex, otherStack);
+                player.getInventory().setItem(i, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    private boolean isSameResul(ItemStack itemStack) {
+        return ItemStack.isSameItemSameTags(resultSlots.getItem(0), itemStack) && resultSlots.getItem(0).getCount() == itemStack.getCount();
+    }
+
+
+
+
+
 }

@@ -7,7 +7,8 @@ public enum RuleType {
     FORGE_ENERGY,
     MOD_ITEM,
     MOD_FLUID,
-    ANY;
+    ANY_ITEM,
+    ANY_FLUID;
 
     public static RuleType get(int i) {
         return switch (i) {
@@ -16,7 +17,8 @@ public enum RuleType {
             case 3 -> FORGE_ENERGY;
             case 4 -> MOD_ITEM;
             case 5 -> MOD_FLUID;
-            case 6 -> ANY;
+            case 6 -> ANY_ITEM;
+            case 7 -> ANY_FLUID;
             default -> ITEM;
         };
     }

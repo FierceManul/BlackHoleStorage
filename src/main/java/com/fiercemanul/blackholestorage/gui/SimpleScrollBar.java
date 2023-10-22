@@ -61,10 +61,6 @@ public abstract class SimpleScrollBar extends AbstractWidget {
         this.scrollTagSize = Math.max(width, Math.min(height, scrollTagSize));
     }
 
-    /*public void setScrollTagSizePercentage(double percentage) {
-        this.scrollTagSize = Math.max(width, Math.min(height, scrollTagSize * getHeight()));
-    }*/
-
     public double getScrollTagSize() {
         return scrollTagSize;
     }

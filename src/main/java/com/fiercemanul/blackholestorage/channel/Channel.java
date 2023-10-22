@@ -23,7 +23,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     private String[] fluidKeys = new String[]{};
     private ItemStack[] slotItemTemp = {ItemStack.EMPTY};
     private FluidStack[] slotFluidTemp = {FluidStack.EMPTY};
-    public int maxChannelSize = Config.MAX_SIZE_PRE_CHANNEL.get();
+    public final int maxChannelSize = Config.MAX_SIZE_PRE_CHANNEL.get();
 
     public Channel() {}
 
@@ -52,6 +52,8 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     public int getChannelSize() {
         return storageItems.size() + storageFluids.size() + storageEnergies.size();
     }
+
+    public boolean hasItem(String item) { return storageItems.containsKey(item); }
 
     public int getItemAmount(String item) {
         return (int) Long.min(Integer.MAX_VALUE, storageItems.getOrDefault(item, 0L));
@@ -478,9 +480,22 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     public void removeItem(ItemStack itemStack) {
         if (itemStack.isEmpty()) return;
         String itemId = Tools.getItemId(itemStack.getItem());
+        if (!storageItems.containsKey(itemId)) return;
         long storageCount = storageItems.get(itemId);
         if (itemStack.getCount() < storageCount) {
             storageItems.replace(itemId, storageCount - itemStack.getCount());
+            onItemChanged(itemId, false);
+        } else {
+            storageItems.remove(itemId);
+            onItemChanged(itemId, true);
+        }
+    }
+
+    public void removeItem(String itemId, long count) {
+        if (!storageItems.containsKey(itemId)) return;
+        long storageCount = storageItems.get(itemId);
+        if (count < storageCount) {
+            storageItems.replace(itemId, storageCount - count);
             onItemChanged(itemId, false);
         } else {
             storageItems.remove(itemId);
@@ -603,14 +618,14 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
 
     @Override
     public int getTanks() {
-        return storageFluids.size() + 9;
+        return storageFluids.size() + 18;
     }
 
     @Override
     public @NotNull FluidStack getFluidInTank(int tank) {
-        if (tank >= fluidKeys.length) return FluidStack.EMPTY;
-        FluidStack fluidStack = slotFluidTemp[tank];
-        fluidStack.setAmount((int) Math.min(Integer.MAX_VALUE, storageFluids.get(fluidKeys[tank])));
+        if (tank >= fluidKeys.length + 9 || tank < 9) return FluidStack.EMPTY;
+        FluidStack fluidStack = slotFluidTemp[tank - 9];
+        fluidStack.setAmount((int) Math.min(Integer.MAX_VALUE, storageFluids.get(fluidKeys[tank - 9])));
         return fluidStack;
     }
 

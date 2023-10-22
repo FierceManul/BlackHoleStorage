@@ -12,10 +12,8 @@ import com.fiercemanul.blackholestorage.util.Tools;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -23,6 +21,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fluids.FluidStack;
@@ -33,17 +32,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
+public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
 
     private static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/active_port.png");
-    public final int imageWidth = 202;
-    public final int imageHeight = 249;
     private final String ownerName = ClientChannelManager.getInstance().getUserName(menu.owner);
     private ChoosingRuleDisplayLabel choosingRuleDisplayLabel;
-    private EditBox ruleNumberBox;
-    private EditBox rateBox;
+    private RuleRateBox ruleRateBox;
+    private RateBox rateBox;
     private RuleScrollBar scrollBar;
+    private int itemRate = 64;
+    private int fluidRate = 1000;
+    private int feRate = 100000;
 
 
     public ActivePortScreen(ActivePortMenu menu, Inventory pPlayerInventory, Component pTitle) {
@@ -77,10 +77,10 @@ public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
         }
         choosingRuleDisplayLabel = new ChoosingRuleDisplayLabel(leftPos + 50, topPos + 143, 114, 10);
         addRenderableWidget(choosingRuleDisplayLabel);
-        ruleNumberBox = new RuleRateBox(leftPos + 52, topPos + 157, 110, 10, Integer.MAX_VALUE, 10);
-        ruleNumberBox.setValue(String.valueOf(64));
-        ruleNumberBox.setBordered(false);
-        addRenderableWidget(ruleNumberBox);
+        ruleRateBox = new RuleRateBox(leftPos + 52, topPos + 157, 110, 10, Integer.MAX_VALUE, 10);
+        ruleRateBox.setValue(String.valueOf(feRate));
+        ruleRateBox.setBordered(false);
+        addRenderableWidget(ruleRateBox);
         addRenderableWidget(new AddRuleButton(leftPos + 168, topPos + 146));
         scrollBar = new RuleScrollBar(leftPos + 188, topPos + 27, 4, 142);
         updateScrollTagSize();
@@ -128,11 +128,6 @@ public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
             }
         } else if (choosingRuleDisplayLabel.isHovered()) choosingRuleDisplayLabel.renderToolTip(pPoseStack, pX, pY);
         super.renderTooltip(pPoseStack, pX, pY);
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    protected void renderLabels(PoseStack pPoseStack, int pMouseX, int pMouseY) {
     }
 
     @Override
@@ -194,6 +189,10 @@ public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
                 menu.editingDownPort,
                 menu.editingUpPort,
                 rate));
+    }
+
+    public void jeiGhostItemRule(ItemStack itemStack) {
+        menu.checkerContainer.makeRules(itemStack);
     }
 
     private class PortButton extends ImageButton {
@@ -446,7 +445,7 @@ public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
 
         public AddRuleButton(int pX, int pY) {
             super(pX, pY, 16, 16, 48, 200, GUI_IMG, pButton -> {
-                if (!ruleNumberBox.getValue().isEmpty()) menu.choosingRules.applyRule(Integer.parseInt(ruleNumberBox.getValue()));
+                if (!ruleRateBox.getValue().isEmpty()) menu.choosingRules.applyRule(Integer.parseInt(ruleRateBox.getValue()));
                 updateScrollTagSize();
             });
         }
@@ -582,8 +581,23 @@ public class ActivePortScreen extends AbstractContainerScreen<ActivePortMenu> {
         @Override
         @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
-            if (rule != menu.choosingRules.getChoosingRule()) {
-                rule = menu.choosingRules.getChoosingRule();
+            InfoRule thisRule = menu.choosingRules.getChoosingRule();
+            if (rule != thisRule) {
+                RuleType lastRuleType = rule.ruleType;
+                RuleType thisRuleType = thisRule.ruleType;
+                if (!lastRuleType.equals(thisRuleType)) {
+                    switch (lastRuleType) {
+                        case ITEM, ITEM_TAG, MOD_ITEM, ANY_ITEM -> itemRate = Integer.parseInt(ruleRateBox.getValue());
+                        case FLUID, MOD_FLUID, ANY_FLUID -> fluidRate = Integer.parseInt(ruleRateBox.getValue());
+                        case FORGE_ENERGY -> feRate = Integer.parseInt(ruleRateBox.getValue());
+                    }
+                    switch (thisRuleType) {
+                        case ITEM, ITEM_TAG, MOD_ITEM, ANY_ITEM -> ruleRateBox.setValue(String.valueOf(itemRate));
+                        case FLUID, MOD_FLUID, ANY_FLUID -> ruleRateBox.setValue(String.valueOf(fluidRate));
+                        case FORGE_ENERGY -> ruleRateBox.setValue(String.valueOf(feRate));
+                    }
+                }
+                rule = thisRule;
                 setString();
             }
             font.draw(pPoseStack, stringTemp, x + 1, y + 2, 14737632);

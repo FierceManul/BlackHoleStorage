@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -29,11 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @OnlyIn(Dist.CLIENT)
-public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> {
+public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
 
     private static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/passive_port.png");
-    public final int imageWidth = 202;
-    public final int imageHeight = 249;
     private BlockState passivePortBlockState = menu.player.level.getBlockState(menu.blockPos);
     private final ItemStack passivePortItem = new ItemStack(BlackHoleStorage.PASSIVE_PORT_ITEM.get());
     private final String ownerName = ClientChannelManager.getInstance().getUserName(menu.owner);
@@ -112,11 +109,6 @@ public class PassivePortScreen extends AbstractContainerScreen<PassivePortMenu> 
         CompoundTag nbt = new CompoundTag();
         nbt.put("BlockStateTag", blockEntityTag);
         passivePortItem.setTag(nbt);
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    protected void renderLabels(PoseStack pPoseStack, int pMouseX, int pMouseY) {
     }
 
     private class FaceButton extends ImageButton {

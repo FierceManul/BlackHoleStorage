@@ -19,7 +19,7 @@ public class ItemOutputRule extends Rule{
     @Override
     public void work(ServerChannel channel, BlockEntity blockEntity, Direction targetFace) {
         blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, targetFace).ifPresent(itemHandler -> {
-            if (channel.getRealItemAmount(value) == 0L) return;
+            if (!channel.hasItem(value)) return;
             ItemStack testStack = new ItemStack(item, Integer.min(channel.getItemAmount(value), rate));
             ItemStack afterStack = itemHandler.insertItem(lastSlot, testStack, true);
             int count = testStack.getCount() - afterStack.getCount();

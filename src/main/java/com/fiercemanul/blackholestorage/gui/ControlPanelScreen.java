@@ -15,7 +15,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -37,11 +36,9 @@ import java.util.List;
 
 
 @OnlyIn(Dist.CLIENT)
-public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu> {
+public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
     private static final ResourceLocation GUI_IMG = new ResourceLocation(BlackHoleStorage.MODID, "textures/gui/control_panel.png");
-    public final int imageWidth = 202;
-    public final int imageHeight = 249;
     private final String ownerName;
     private String[] lastHoveredObject = new String[2];
     private long lastCount = 0;
@@ -50,6 +47,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     private ItemScrollBar scrollBar;
     private EditBox shortSearchBox;
     private EditBox longSearchBox;
+    private CraftToChannelButton craftToChannelButton;
+    private CraftToInventoryButton craftToInventoryButton;
+    private CraftAndDropButton craftAndDropButton;
 
     public ControlPanelScreen(ControlPanelMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -82,7 +82,22 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         this.longSearchBox.setValue(menu.filter);
         this.addRenderableWidget(shortSearchBox);
         this.addRenderableWidget(longSearchBox);
+        this.craftToChannelButton = new CraftToChannelButton(leftPos + 91, topPos + 142);
+        this.craftToInventoryButton = new CraftToInventoryButton(leftPos + 108, topPos + 142);
+        this.craftAndDropButton = new CraftAndDropButton(leftPos + 125, topPos + 142);
+        this.craftToChannelButton.active = menu.craftingMode;
+        this.craftToChannelButton.visible = menu.craftingMode;
+        this.craftToInventoryButton.active = menu.craftingMode;
+        this.craftToInventoryButton.visible = menu.craftingMode;
+        this.craftAndDropButton.active = menu.craftingMode;
+        this.craftAndDropButton.visible = menu.craftingMode;
+        this.addRenderableWidget(craftToChannelButton);
+        this.addRenderableWidget(craftToInventoryButton);
+        this.addRenderableWidget(craftAndDropButton);
         menu.dummyContainer.refreshContainer(true);
+        menu.setCraftMode = () -> {
+            if (!menu.craftingMode) toggleCraftingMode();
+        };
     }
 
     @Override
@@ -181,6 +196,9 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
                 list.add(Component.translatable("bhs.GUI.search.tip3").getVisualOrderText());
                 renderTooltip(pPoseStack, list, pX, pY);
             } else if (sortButton.isHoveredOrFocused()) sortButton.renderToolTip(pPoseStack, pX, pY);
+            else if (craftToChannelButton.isHoveredOrFocused()) craftToChannelButton.renderToolTip(pPoseStack, pX, pY);
+            else if (craftToInventoryButton.isHoveredOrFocused()) craftToInventoryButton.renderToolTip(pPoseStack, pX, pY);
+            else if (craftAndDropButton.isHoveredOrFocused()) craftAndDropButton.renderToolTip(pPoseStack, pX, pY);
         }
     }
 
@@ -245,9 +263,6 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
-    protected void renderLabels(PoseStack stack, int i, int j) {}
-
-    @Override
     public void containerTick() {
         super.containerTick();
         if (shortSearchBox.isFocused()) shortSearchBox.tick();
@@ -255,23 +270,54 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
     }
 
     @Override
+    public void onClose() {
+        NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
+        ((ClientChannel) menu.channel).removeListener();
+        super.onClose();
+    }
+
+    @Override
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        boolean lshift = InputConstants.isKeyDown(getMinecraft().getWindow().getWindow(), InputConstants.KEY_LSHIFT);
         if (pButton == 1) {
             //短搜索框
-            if (pMouseX >= leftPos + 74 && pMouseX <= leftPos + 141 && pMouseY >= topPos + 125 && pMouseY <= topPos + 135 && menu.craftingMode) {
+            if (shortSearchBox.isMouseOver(pMouseX, pMouseY)) {
                 menu.filter = "";
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
                 shortSearchBox.setFocus(true);
+                shortSearchBox.setEditable(true);
             }
             //长搜索框
-            else if (pMouseX >= leftPos + 40 && pMouseX <= leftPos + 124 && pMouseY >= topPos + 162 && pMouseY <= topPos + 172 && !menu.craftingMode) {
+            else if (longSearchBox.isMouseOver(pMouseX, pMouseY)) {
                 menu.filter = "";
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
                 longSearchBox.setFocus(true);
+                longSearchBox.setEditable(true);
+            }
+            else if (craftToChannelButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 6);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 7);
+            } else if (craftToInventoryButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 10);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 11);
+            } else if (craftAndDropButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 14);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 15);
+            }
+        } else {
+            if (craftToChannelButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 9);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 8);
+            } else if (craftToInventoryButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 13);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 12);
+            } else if (craftAndDropButton.isMouseOver(pMouseX, pMouseY)) {
+                if (lshift) minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 17);
+                else minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 16);
             }
         }
         return super.mouseClicked(pMouseX, pMouseY, pButton);
@@ -354,13 +400,19 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
     }
 
-    private void toggleCraftingMode() {
+    protected void toggleCraftingMode() {
         this.menu.craftingMode = !this.menu.craftingMode;
         this.menu.dummyContainer.refreshContainer(true);
         this.shortSearchBox.setFocus(false);
         this.shortSearchBox.setVisible(menu.craftingMode);
         this.longSearchBox.setFocus(false);
         this.longSearchBox.setVisible(!menu.craftingMode);
+        this.craftToChannelButton.active = menu.craftingMode;
+        this.craftToChannelButton.visible = menu.craftingMode;
+        this.craftToInventoryButton.active = menu.craftingMode;
+        this.craftToInventoryButton.visible = menu.craftingMode;
+        this.craftAndDropButton.active = menu.craftingMode;
+        this.craftAndDropButton.visible = menu.craftingMode;
         this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 1);
         scrollBar.setHeight(menu.craftingMode ? 118 : 152);
         scrollBar.setScrollTagSize();
@@ -456,6 +508,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
@@ -467,6 +520,7 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
             else if (menu.locked) renderTooltip(pPoseStack, componentB, pMouseX, pMouseY);
@@ -561,10 +615,61 @@ public class ControlPanelScreen extends AbstractContainerScreen<ControlPanelMenu
         }
     }
 
-    @Override
-    public void onClose() {
-        NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
-        ((ClientChannel) menu.channel).removeListener();
-        super.onClose();
+    private class CraftToChannelButton extends ImageButton {
+
+        private final List<FormattedCharSequence> list = new ArrayList<>();
+        public CraftToChannelButton (int x, int y) {
+            super(x, y, 16, 16, 0, 215, GUI_IMG, pButton -> {});
+            list.add(Component.translatable("bhs.GUI.craft.channel").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+        }
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
+            renderTooltip(pPoseStack, list, pMouseX, pMouseY);
+        }
     }
+
+    private class CraftToInventoryButton extends ImageButton {
+
+        private final List<FormattedCharSequence> list = new ArrayList<>();
+        public CraftToInventoryButton (int x, int y) {
+            super(x, y, 16, 16, 16, 215, GUI_IMG, pButton -> {});
+            list.add(Component.translatable("bhs.GUI.craft.inv").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+        }
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
+            renderTooltip(pPoseStack, list, pMouseX, pMouseY);
+        }
+    }
+
+    private class CraftAndDropButton extends ImageButton {
+
+        private final List<FormattedCharSequence> list = new ArrayList<>();
+        public CraftAndDropButton (int x, int y) {
+            super(x, y, 16, 16, 32, 215, GUI_IMG, pButton -> {});
+            list.add(Component.translatable("bhs.GUI.craft.drop").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+        }
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
+            renderTooltip(pPoseStack, list, pMouseX, pMouseY);
+        }
+    }
+
 }

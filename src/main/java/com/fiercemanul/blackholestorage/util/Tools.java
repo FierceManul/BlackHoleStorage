@@ -4,6 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.text.DecimalFormat;
@@ -90,7 +91,7 @@ public class Tools {
         if (ID_FLUID_MAP.containsKey(id)) return ID_FLUID_MAP.get(id);
         else {
             Fluid fluid = ForgeRegistries.FLUIDS.getValue(new ResourceLocation(id));
-            if (fluid == null) return null;
+            if (fluid == null) return Fluids.EMPTY;
             ID_FLUID_MAP.put(id, fluid);
             FLUID_ID_MAP.put(fluid, id);
             return fluid;

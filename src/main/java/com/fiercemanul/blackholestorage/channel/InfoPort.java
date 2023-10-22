@@ -8,11 +8,9 @@ import java.util.ArrayList;
 
 public final class InfoPort {
 
-    public ArrayList<InfoRule> inputRules = new ArrayList<>();
-    public ArrayList<InfoRule> outputRules = new ArrayList<>();
+    public final ArrayList<InfoRule> inputRules = new ArrayList<>();
+    public final ArrayList<InfoRule> outputRules = new ArrayList<>();
     public boolean enable = false;
-
-    public InfoPort() {}
 
     public InfoPort(CompoundTag tag) {
         if (tag == null || tag.isEmpty()) return;

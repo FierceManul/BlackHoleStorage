@@ -24,8 +24,8 @@ public class PassivePortMenu extends AbstractContainerMenu {
     protected boolean locked;
     public final PassivePortBlockEntity passivePort;
     public final BlockPos blockPos;
-    public UUID channelOwner;
-    public String channelName;
+    public final UUID channelOwner;
+    public final String channelName;
 
     public PassivePortMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
         super(BlackHoleStorage.PASSIVE_PORT_MENU.get(), containerId);

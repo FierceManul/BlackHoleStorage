@@ -36,4 +36,14 @@ class NumberBox extends EditBox {
         long l = Long.parseLong(getValue());
         if (l > maxValue) setValue(String.valueOf(maxValue));
     }
+
+    @Override
+    public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        if (visible && isHovered && pButton == 1) {
+            setValue("");
+            setFocus(true);
+            setEditable(true);
+            return true;
+        } else return super.mouseClicked(pMouseX, pMouseY, pButton);
+    }
 }

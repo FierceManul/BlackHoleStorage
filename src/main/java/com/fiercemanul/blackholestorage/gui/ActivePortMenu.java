@@ -24,6 +24,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -41,9 +43,9 @@ public class ActivePortMenu extends AbstractContainerMenu {
     protected boolean locked;
     protected final ActivePortBlockEntity activePort;
     protected final BlockPos blockPos;
-    protected UUID channelOwner;
-    protected String channelName;
-    protected CheckerContainer checkerContainer = new CheckerContainer();
+    protected final UUID channelOwner;
+    protected final String channelName;
+    protected final CheckerContainer checkerContainer = new CheckerContainer();
     protected InfoPort editingNorthPort;
     protected InfoPort editingSouthPort;
     protected InfoPort editingWestPort;
@@ -248,7 +250,9 @@ public class ActivePortMenu extends AbstractContainerMenu {
     public void deleteRule(int buttonId) {
         if (locked) return;
         selectedRules.remove(scrollAt + buttonId);
-        if (selectedRules.size() > 4 && scrollAt > selectedRules.size() - 4) scrollAt = selectedRules.size() - 4;
+        if (selectedRules.size() > 4) {
+            if (scrollAt > selectedRules.size() - 4) scrollAt = selectedRules.size() - 4;
+        } else scrollAt = 0;
         if (selectedPort.inputRules.size() + selectedPort.outputRules.size() == 0) selectedPort.enable = false;
         dummyContainer.updateItem();
     }
@@ -289,13 +293,18 @@ public class ActivePortMenu extends AbstractContainerMenu {
                 itemStack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(fluidHandler -> {
                     int tanks = fluidHandler.getTanks();
                     for (int i = 0; i < tanks; i++) {
-                        choosingRules.rules.add(new InfoRule(RuleType.FLUID, Tools.getFluidId(fluidHandler.getFluidInTank(i).getFluid()), 1));
+                        Fluid fluid = fluidHandler.getFluidInTank(i).getFluid();
+                        if (fluid.equals(Fluids.EMPTY)) continue;
+                        choosingRules.rules.add(new InfoRule(RuleType.FLUID, Tools.getFluidId(fluid), 1));
                     }
                 });
                 choosingRules.rules.add(new InfoRule(RuleType.MOD_ITEM, ForgeRegistries.ITEMS.getKey(itemStack.getItem()).getNamespace(), 1));
                 choosingRules.rules.add(new InfoRule(RuleType.MOD_FLUID, ForgeRegistries.ITEMS.getKey(itemStack.getItem()).getNamespace(), 1));
             }
-            if (isPortInput()) choosingRules.rules.add(new InfoRule(RuleType.ANY, "", 1));
+            if (isPortInput()) {
+                choosingRules.rules.add(new InfoRule(RuleType.ANY_ITEM, "", 1));
+                choosingRules.rules.add(new InfoRule(RuleType.ANY_FLUID, "", 1));
+            }
             choosingRules.rules.add(new InfoRule(RuleType.FORGE_ENERGY, "", 1));
             choosingRules.choosingIndex = 0;
             choosingRules.updateDisplay();
@@ -361,6 +370,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
             InfoRule rule = rules.get(choosingIndex);
             selectedRules.add(new InfoRule(rule.ruleType, rule.value, ruleRate));
             selectedPort.enable = true;
+            if (selectedRules.size() >= 5) scrollAt++;
             dummyContainer.updateItem();
         }
 

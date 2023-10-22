@@ -26,11 +26,7 @@ public class NameCachePack {
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-                ClientChannelManager.getInstance().setUserCache(userCache);
-            });
-        });
+        context.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientChannelManager.getInstance().setUserCache(userCache)));
         context.get().setPacketHandled(true);
     }
 }

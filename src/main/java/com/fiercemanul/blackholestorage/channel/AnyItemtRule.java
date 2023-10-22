@@ -6,19 +6,18 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 
-public class MultiItemInputRule extends Rule{
+public class AnyItemtRule extends Rule {
 
-    private final ItemChecker items;
     private int lastSlot = 0;
 
-    public MultiItemInputRule(RuleType ruleType, ItemChecker items, String value, int rate) {
-        super(ruleType, value, rate);
-        this.items = items;
+    public AnyItemtRule(int rate) {
+        super(RuleType.ANY_ITEM, "", rate);
     }
 
     @Override
     public void work(ServerChannel channel, BlockEntity blockEntity, Direction targetFace) {
         blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, targetFace).ifPresent(itemHandler -> {
+            if (!channel.canStorageItem(value)) return;
             if (worked(itemHandler, lastSlot, channel)) return;
             int a = lastSlot;
             int maxSlots = itemHandler.getSlots();
@@ -39,9 +38,7 @@ public class MultiItemInputRule extends Rule{
     }
 
     private boolean worked(IItemHandler itemHandler, int slot, ServerChannel channel) {
-        if (!items.contains(itemHandler.getStackInSlot(slot).getItem())) return false;
         ItemStack testStack = itemHandler.extractItem(slot, rate, true);
-        if (testStack.isEmpty() || !items.contains(testStack.getItem())) return false;
         int count = channel.addItem(testStack);
         if (count > 0) {
             itemHandler.extractItem(slot, count, false);

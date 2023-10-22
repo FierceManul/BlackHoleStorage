@@ -12,7 +12,7 @@ public class NetworkHandler {
 
     private static final String PROTOCOL_VERSION = "1";
 
-    public static SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
+    public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(BlackHoleStorage.MODID, "net"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
@@ -62,10 +62,10 @@ public class NetworkHandler {
                 AddChannelPack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
         INSTANCE.registerMessage(8,
-                ChanneltAddPack.class,
-                ChanneltAddPack::makePack,
-                ChanneltAddPack::new,
-                ChanneltAddPack::handle,
+                ChannelAddPack.class,
+                ChannelAddPack::makePack,
+                ChannelAddPack::new,
+                ChannelAddPack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         INSTANCE.registerMessage(9,
                 ChannelSetPack.class,
@@ -96,6 +96,12 @@ public class NetworkHandler {
                 ClientPortResultPack::makePack,
                 ClientPortResultPack::new,
                 ClientPortResultPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(14,
+                RecipePack.class,
+                RecipePack::makePack,
+                RecipePack::new,
+                RecipePack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }

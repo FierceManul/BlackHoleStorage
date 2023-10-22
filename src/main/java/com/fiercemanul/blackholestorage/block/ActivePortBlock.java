@@ -38,7 +38,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.function.Function;
 
 public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 

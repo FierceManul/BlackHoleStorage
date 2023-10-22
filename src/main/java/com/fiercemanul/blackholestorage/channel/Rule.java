@@ -67,8 +67,11 @@ public abstract class Rule {
                 else if (i == 0) value = value.substring(1);
                 return isInput ? new ModFluidInputRule(value, rate) : new ModFluidOutputRule(value, rate);
             }
-            case ANY -> {
-                return isInput ? new AnyInputRule(rate) : null;
+            case ANY_ITEM -> {
+                return isInput ? new AnyItemtRule(rate) : null;
+            }
+            case ANY_FLUID -> {
+                return isInput ? new AnyFluidRule(rate) : null;
             }
         }
         return null;
