@@ -3,6 +3,7 @@ package com.fiercemanul.blackholestorage.compat;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.gui.ActivePortScreen;
 import com.fiercemanul.blackholestorage.gui.BaseScreen;
+import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;

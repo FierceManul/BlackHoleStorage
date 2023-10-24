@@ -32,7 +32,7 @@
     "bhs.GUI.craft.tip2": "§a右键§r: 合成8个",
     "bhs.GUI.craft.tip3": "§d左SHIFT§r + §a左键§r: 合成512个",
     "bhs.GUI.craft.tip4": "§d左SHIFT§r + §a右键§r: 合成1个",
-    "bhs.GUI.craft.missing": "缺失物品",
+    "bhs.GUI.craft.missing": "缺失物品 (但能按)",
     "bhs.GUI.capability.tip1": "§a左鍵§r : 將一組 %d 裝到手持物",
     "bhs.GUI.capability.tip2": "§a右鍵§r : 從手持物卸下一組東西",
     "bhs.GUI.capability.tip3": "§d左SHIFT§r : 滿上 !",

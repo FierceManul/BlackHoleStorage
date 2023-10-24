@@ -16,6 +16,7 @@ import java.util.HashMap;
 public abstract class Channel implements IItemHandler, IFluidHandler, IEnergyStorage {
 
     private String channelName = "UnName";
+    //TODO:以后想兼容mek气体和其他能量，顺便试试改成HashMap<Item, Long>.
     public final HashMap<String, Long> storageItems = new HashMap<>();
     public final HashMap<String, Long> storageFluids = new HashMap<>();
     public final HashMap<String, Long> storageEnergies = new HashMap<>();

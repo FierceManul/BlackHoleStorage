@@ -32,7 +32,7 @@
     "bhs.GUI.craft.tip2": "§aRMB§r: Craft 8",
     "bhs.GUI.craft.tip3": "§dLSHIFT§r + §aLMB§r: Craft 512",
     "bhs.GUI.craft.tip4": "§dLSHIFT§r + §aRMB§r: Craft 1",
-    "bhs.GUI.craft.missing": "Missing items",
+    "bhs.GUI.craft.missing": "Missing items (can click)",
     "bhs.GUI.capability.tip1": "§aLMB§r : Input 1 stack %d to carried",
     "bhs.GUI.capability.tip2": "§aRMB§r : Output 1 stack object from carried",
     "bhs.GUI.capability.tip3": "§dLSHIFT§r : Full it !",
