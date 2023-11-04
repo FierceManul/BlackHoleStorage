@@ -3,7 +3,6 @@ package com.fiercemanul.blackholestorage.compat;
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.gui.ActivePortScreen;
 import com.fiercemanul.blackholestorage.gui.BaseScreen;
-import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
@@ -31,7 +30,7 @@ public final class CompatJei implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        registration.addRecipeTransferHandler(new ControlPanelRecipeHandler(registration.getTransferHelper()), RecipeTypes.CRAFTING);
+        registration.addUniversalRecipeTransferHandler(new ControlPanelRecipeHandler(registration.getTransferHelper()));
     }
 
 

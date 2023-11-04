@@ -103,5 +103,11 @@ public class NetworkHandler {
                 RecipePack::new,
                 RecipePack::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        INSTANCE.registerMessage(15,
+                RecipeItemPack.class,
+                RecipeItemPack::makePack,
+                RecipeItemPack::new,
+                RecipeItemPack::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 }
