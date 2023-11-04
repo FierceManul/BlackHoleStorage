@@ -95,7 +95,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         this.addRenderableWidget(craftToInventoryButton);
         this.addRenderableWidget(craftAndDropButton);
         menu.dummyContainer.refreshContainer(true);
-        menu.setCraftMode = () -> {
+        menu.craftModeSetter = () -> {
             if (!menu.craftingMode) toggleCraftingMode();
         };
     }

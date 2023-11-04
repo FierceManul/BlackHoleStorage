@@ -2,12 +2,9 @@ package com.fiercemanul.blackholestorage.network;
 
 import com.fiercemanul.blackholestorage.BlackHoleStorage;
 import com.fiercemanul.blackholestorage.gui.ControlPanelMenu;
-import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.HashMap;

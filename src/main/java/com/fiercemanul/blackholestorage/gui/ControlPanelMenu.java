@@ -70,7 +70,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public byte sortType;
     public byte viewType;
     public boolean LShifting = false;
-    public Runnable setCraftMode = () -> {};
+    public Runnable craftModeSetter = () -> {};
     private CraftingRecipe lastCraftingRecipe = null;
 
 
@@ -1328,205 +1328,54 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     }
 
     public void receivedRecipe(String recipeId, boolean maxTransfer) {
-        craftingMode = true;
-        clearCraftSlots();
-        slotsChanged(craftSlots);
-
         if (level.getServer() == null) return;
         RecipeManager manager = level.getServer().getRecipeManager();
         Optional<? extends Recipe<?>> optional = manager.byKey(new ResourceLocation(recipeId));
         if (optional.isEmpty()) return;
         Inventory inventory = player.getInventory();
-        if (optional.get() instanceof CraftingRecipe craftingRecipe) {
-            NonNullList<Ingredient> ingredients = craftingRecipe.getIngredients();
-            //无nbt物品的可用数量
-            HashMap<Item, Long> itemAmount = new HashMap<>();
-            //无nbt物品的份数
-            HashMap<Item, Integer> itemP = new HashMap<>();
-            //背包物品计数器
-            InvItemCounter invItemCounter = null;
-            //ingredients对应的首选物品,null无可用，air为nbt.
-            ArrayList<Item> itemChosen = new ArrayList<>();
-            //统计上面需要的内容
-            for (Ingredient ingredient : ingredients) {
-                //空槽跳过
-                if (ingredient.isEmpty()) {
-                    itemChosen.add(null);
-                    continue;
-                }
-                //此槽允许的物品列
-                ItemStack[] stacks = ingredient.getItems();
-                long markCount = 0;
-                Item markItem = null;
-                boolean hasNbtItem = false;
-                for (ItemStack stack : stacks) {
-                    //不统计nbt
-                    if (stack.hasTag()) {
-                        hasNbtItem = true;
-                    } else {
-                        //边统计边确认此槽可以使用的物品里数量最大的那一种
-                        Item item = stack.getItem();
-                        long count;
-                        if (itemAmount.containsKey(item)) count = itemAmount.get(item);
-                        else {
-                            count = channel.getRealItemAmount(Tools.getItemId(item));
-                            //9个合成格极限这么多，够了就没必要继续统计了。
-                            if (count < 576) {
-                                if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
-                                count += invItemCounter.getCount(item);
-                            }
-                            itemAmount.put(item, count);
-                        }
-                        if (count > markCount) {
-                            markCount = count;
-                            markItem = item;
-                        }
-                        if (itemP.containsKey(item)) itemP.replace(item, itemP.get(item) + 1);
-                        else itemP.put(item, 1);
-                    }
-                }
-                if (markItem == null && hasNbtItem) {
-                    itemChosen.add(Items.AIR);
-                } else itemChosen.add(markItem);
-            }
+        if (!(optional.get() instanceof CraftingRecipe craftingRecipe)) return;
 
-            //先填充一次，如果连填充单个都不够，那就不需要继续了。
-            CraftingRecipeGridIndexGetter recipeSlotIndexGetter = new CraftingRecipeGridIndexGetter(craftingRecipe);
-            for (int i = 0; i < itemChosen.size(); i++) {
-                int gridIndex = recipeSlotIndexGetter.get();
-                Item item = itemChosen.get(i);
-                if (item == null) continue;
-                if (item.equals(Items.AIR)) {
-                    //代表此处物品需要nbt
-                    Ingredient ingredient = ingredients.get(i);
-                    for (ItemStack stack : ingredient.getItems()) {
-                        //无nbt的踢开
-                        if (!stack.hasTag()) continue;
-                        if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
-                        Integer[] itemIndex = invItemCounter.getNbtItemIndex();
-                        //玩家库存物品与目标对比，flag用于跳出双层循环。
-                        boolean flag = false;
-                        for (Integer index : itemIndex) {
-                            ItemStack stack2 = inventory.getItem(index);
-                            if (stack2.isEmpty()) continue;
-                            if (ItemStack.isSameItemSameTags(stack, stack2)) {
-                                if (stack2.getCount() == 1) {
-                                    craftSlots.setItem(gridIndex, stack2);
-                                    inventory.setItem(index, ItemStack.EMPTY);
-                                } else {
-                                    ItemStack newStack = stack2.copy();
-                                    newStack.setCount(1);
-                                    craftSlots.setItem(gridIndex, newStack);
-                                    stack2.grow(-1);
-                                }
-                                flag = true;
-                                break;
-                            }
-                        }
-                        if (flag) break;
-                    }
+        craftingMode = true;
+        clearCraftSlots();
+        slotsChanged(craftSlots);
+
+        NonNullList<Ingredient> ingredients = craftingRecipe.getIngredients();
+        //无nbt物品的可用数量
+        HashMap<Item, Long> itemAmount = new HashMap<>();
+        //无nbt物品的份数
+        HashMap<Item, Integer> itemP = new HashMap<>();
+        //背包物品计数器
+        InvItemCounter invItemCounter = null;
+        //ingredients对应的首选物品,null无可用，air为nbt.
+        ArrayList<Item> itemChosen = new ArrayList<>();
+        //统计上面需要的内容
+        for (Ingredient ingredient : ingredients) {
+            //空槽跳过
+            if (ingredient.isEmpty()) {
+                itemChosen.add(null);
+                continue;
+            }
+            //此槽允许的物品列
+            ItemStack[] stacks = ingredient.getItems();
+            long markCount = 0;
+            Item markItem = null;
+            boolean hasNbtItem = false;
+            for (ItemStack stack : stacks) {
+                //不统计nbt
+                if (stack.hasTag()) {
+                    hasNbtItem = true;
                 } else {
-                    if (channel.getRealItemAmount(Tools.getItemId(item)) > 0) {
-                        craftSlots.setItem(gridIndex, new ItemStack(item));
-                        channel.removeItem(Tools.getItemId(item), 1);
-                    } else {
-                        if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
-                        Integer[] itemIndex = invItemCounter.getNoNbtItemIndex();
-                        for (Integer index : itemIndex) {
-                            ItemStack stack = inventory.getItem(index);
-                            if (stack.isEmpty()) continue;
-                            if (stack.getItem().equals(item)) {
-                                if (stack.getCount() == 1) {
-                                    craftSlots.setItem(gridIndex, stack);
-                                    inventory.setItem(index, ItemStack.EMPTY);
-                                } else {
-                                    craftSlots.setItem(gridIndex, new ItemStack(item));
-                                    stack.grow(-1);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!craftingRecipe.matches(craftSlots, level)) return;
-            if (maxTransfer) {
-                for (int i = 0; i < 9; i++) {
-                    ItemStack itemStack = craftSlots.getItem(i);
-                    if (itemStack.isEmpty() || itemStack.hasTag() || itemStack.getMaxStackSize() == 1) continue;
-                    Item item = itemStack.getItem();
-                    String itemId = Tools.getItemId(item);
-                    long amount = itemAmount.getOrDefault(item, 0L);
-                    int p = itemP.getOrDefault(item, 0);
-                    int targetCount = (int) Long.min(itemStack.getMaxStackSize(), amount / p);
-                    if (targetCount < 2) continue;
-                    int channelHas = channel.getItemAmount(itemId);
-                    if (channelHas >= targetCount) {
-                        channel.removeItem(itemId, targetCount - itemStack.getCount());
-                        itemStack.setCount(targetCount);
-                    } else {
-                        if (channelHas > 0) {
-                            channel.removeItem(itemId, channelHas);
-                            itemStack.setCount(itemStack.getCount() + channelHas);
-                        }
-                        if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
-                        Integer[] itemIndex = invItemCounter.getNoNbtItemIndex();
-                        for (Integer index : itemIndex) {
-                            ItemStack invStack = inventory.getItem(index);
-                            if (invStack.isEmpty() || invStack.hasTag()) continue;
-                            if (item.equals(invStack.getItem())) {
-                                int invCount = invStack.getCount();
-                                if (itemStack.getCount() + invCount > targetCount) {
-                                    int j = itemStack.getCount() + invCount - targetCount;
-                                    invStack.setCount(j);
-                                    itemStack.setCount(targetCount);
-                                } else {
-                                    inventory.setItem(index, ItemStack.EMPTY);
-                                    itemStack.grow(invCount);
-                                    if (itemStack.getCount() >= targetCount) break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            //解决合成表冲突
-            Optional<CraftingRecipe> optional1 = manager.getRecipeFor(RecipeType.CRAFTING, craftSlots, level);
-            if (optional1.isPresent()) {
-                CraftingRecipe currentRecipe = optional1.get();
-                if (currentRecipe != craftingRecipe) {
-                    if (craftingRecipe.matches(craftSlots, level)) {
-                        if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, craftingRecipe)) {
-                            lastCraftingRecipe = craftingRecipe;
-                            resultSlots.setItem(0, craftingRecipe.assemble(craftSlots));
-                        }
-                    }
-                }
-            } else resultSlots.setItem(0, ItemStack.EMPTY);
-        }
-        else {
-            //和上面的大致相同
-            Recipe<?> recipe = optional.get();
-            NonNullList<Ingredient> ingredients = recipe.getIngredients();
-            HashMap<Item, Long> itemAmount = new HashMap<>();
-            HashMap<Item, Integer> itemP = new HashMap<>();
-            InvItemCounter invItemCounter = new InvItemCounter(inventory);
-            HashSet<Item> itemChosen = new HashSet<>();
-            for (Ingredient ingredient : ingredients) {
-                if (ingredient.isEmpty()) continue;
-                ItemStack[] stacks = ingredient.getItems();
-                long markCount = 0;
-                Item markItem = null;
-                for (ItemStack stack : stacks) {
-                    if (stack.hasTag()) continue;
+                    //边统计边确认此槽可以使用的物品里数量最大的那一种
                     Item item = stack.getItem();
                     long count;
                     if (itemAmount.containsKey(item)) count = itemAmount.get(item);
                     else {
                         count = channel.getRealItemAmount(Tools.getItemId(item));
-                        count += invItemCounter.getCount(item);
+                        //9个合成格极限这么多，够了就没必要继续统计了。
+                        if (count < 576) {
+                            if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
+                            count += invItemCounter.getCount(item);
+                        }
                         itemAmount.put(item, count);
                     }
                     if (count > markCount) {
@@ -1536,26 +1385,134 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     if (itemP.containsKey(item)) itemP.replace(item, itemP.get(item) + 1);
                     else itemP.put(item, 1);
                 }
-                if (markItem != null) itemChosen.add(markItem);
             }
-            for (Item item : itemChosen) {
-                int need = itemP.get(item);
-                if (maxTransfer) need *= new ItemStack(item).getMaxStackSize();
-                need -= invItemCounter.getCount(item);
-                if (need > 0) {
-                    ItemStack itemStack = channel.takeItem(Tools.getItemId(item), need);
-                    if (itemStack.isEmpty()) continue;
-                    pushToInventory(itemStack);
+            if (markItem == null && hasNbtItem) {
+                itemChosen.add(Items.AIR);
+            } else itemChosen.add(markItem);
+        }
+
+        //先填充一次，如果连填充单个都不够，那就不需要继续了。
+        CraftingRecipeGridIndexGetter recipeSlotIndexGetter = new CraftingRecipeGridIndexGetter(craftingRecipe);
+        for (int i = 0; i < itemChosen.size(); i++) {
+            int gridIndex = recipeSlotIndexGetter.get();
+            Item item = itemChosen.get(i);
+            if (item == null) continue;
+            if (item.equals(Items.AIR)) {
+                //代表此处物品需要nbt
+                Ingredient ingredient = ingredients.get(i);
+                for (ItemStack stack : ingredient.getItems()) {
+                    //无nbt的踢开
+                    if (!stack.hasTag()) continue;
+                    if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
+                    Integer[] itemIndex = invItemCounter.getNbtItemIndex();
+                    //玩家库存物品与目标对比，flag用于跳出双层循环。
+                    boolean flag = false;
+                    for (Integer index : itemIndex) {
+                        ItemStack stack2 = inventory.getItem(index);
+                        if (stack2.isEmpty()) continue;
+                        if (ItemStack.isSameItemSameTags(stack, stack2)) {
+                            if (stack2.getCount() == 1) {
+                                craftSlots.setItem(gridIndex, stack2);
+                                inventory.setItem(index, ItemStack.EMPTY);
+                            } else {
+                                ItemStack newStack = stack2.copy();
+                                newStack.setCount(1);
+                                craftSlots.setItem(gridIndex, newStack);
+                                stack2.grow(-1);
+                            }
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if (flag) break;
+                }
+            } else {
+                if (channel.getRealItemAmount(Tools.getItemId(item)) > 0) {
+                    craftSlots.setItem(gridIndex, new ItemStack(item));
+                    channel.removeItem(Tools.getItemId(item), 1);
+                } else {
+                    if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
+                    Integer[] itemIndex = invItemCounter.getNoNbtItemIndex();
+                    for (Integer index : itemIndex) {
+                        ItemStack stack = inventory.getItem(index);
+                        if (stack.isEmpty()) continue;
+                        if (stack.getItem().equals(item)) {
+                            if (stack.getCount() == 1) {
+                                craftSlots.setItem(gridIndex, stack);
+                                inventory.setItem(index, ItemStack.EMPTY);
+                            } else {
+                                craftSlots.setItem(gridIndex, new ItemStack(item));
+                                stack.grow(-1);
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         }
+
+        if (!craftingRecipe.matches(craftSlots, level)) return;
+        if (maxTransfer) {
+            for (int i = 0; i < 9; i++) {
+                ItemStack itemStack = craftSlots.getItem(i);
+                if (itemStack.isEmpty() || itemStack.hasTag() || itemStack.getMaxStackSize() == 1) continue;
+                Item item = itemStack.getItem();
+                String itemId = Tools.getItemId(item);
+                long amount = itemAmount.getOrDefault(item, 0L);
+                int p = itemP.getOrDefault(item, 0);
+                int targetCount = (int) Long.min(itemStack.getMaxStackSize(), amount / p);
+                if (targetCount < 2) continue;
+                int channelHas = channel.getItemAmount(itemId);
+                if (channelHas >= targetCount) {
+                    channel.removeItem(itemId, targetCount - itemStack.getCount());
+                    itemStack.setCount(targetCount);
+                } else {
+                    if (channelHas > 0) {
+                        channel.removeItem(itemId, channelHas);
+                        itemStack.setCount(itemStack.getCount() + channelHas);
+                    }
+                    if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
+                    Integer[] itemIndex = invItemCounter.getNoNbtItemIndex();
+                    for (Integer index : itemIndex) {
+                        ItemStack invStack = inventory.getItem(index);
+                        if (invStack.isEmpty() || invStack.hasTag()) continue;
+                        if (item.equals(invStack.getItem())) {
+                            int invCount = invStack.getCount();
+                            if (itemStack.getCount() + invCount > targetCount) {
+                                int j = itemStack.getCount() + invCount - targetCount;
+                                invStack.setCount(j);
+                                itemStack.setCount(targetCount);
+                            } else {
+                                inventory.setItem(index, ItemStack.EMPTY);
+                                itemStack.grow(invCount);
+                                if (itemStack.getCount() >= targetCount) break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //解决合成表冲突
+        Optional<CraftingRecipe> optional1 = manager.getRecipeFor(RecipeType.CRAFTING, craftSlots, level);
+        if (optional1.isPresent()) {
+            CraftingRecipe currentRecipe = optional1.get();
+            if (currentRecipe != craftingRecipe) {
+                if (craftingRecipe.matches(craftSlots, level)) {
+                    if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, craftingRecipe)) {
+                        lastCraftingRecipe = craftingRecipe;
+                        resultSlots.setItem(0, craftingRecipe.assemble(craftSlots));
+                    }
+                }
+            }
+        } else resultSlots.setItem(0, ItemStack.EMPTY);
     }
 
     public void receivedRecipe(Map<String, Integer> itemNeed) {
         itemNeed.forEach((s, integer) -> {
             ItemStack itemStack = channel.takeItem(s, integer);
             if (itemStack.isEmpty()) return;
-            pushToInventory(itemStack);
+            savePushToInventory(itemStack);
         });
     }
 

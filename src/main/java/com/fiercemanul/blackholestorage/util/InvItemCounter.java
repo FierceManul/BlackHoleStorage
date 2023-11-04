@@ -5,7 +5,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.TreeSet;
 
