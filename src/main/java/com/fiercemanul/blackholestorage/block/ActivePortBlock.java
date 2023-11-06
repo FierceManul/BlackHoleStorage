@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -39,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+@ParametersAreNonnullByDefault
 public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterloggedBlock {
 
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
@@ -55,7 +57,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                 .of(Material.METAL)
                 .strength(10.0F, 1200.0F)
                 .sound(SoundType.NETHERITE_BLOCK)
-                .lightLevel(value -> 9)
+                .lightLevel(ActivePortBlock::getLightLevel)
                 .isValidSpawn((state, getter, pos, entityType) -> false)
                 .isSuffocating((state, getter, pos) -> false)
                 .color(MaterialColor.COLOR_BLACK));
@@ -82,10 +84,21 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
         return voxelshape;
     }
 
+    private static int getLightLevel(BlockState value) {
+        if (!value.getValue(NORTH)
+                || !value.getValue(SOUTH)
+                || !value.getValue(WEST)
+                || !value.getValue(EAST)
+                || !value.getValue(DOWN)
+                || !value.getValue(UP)) return 9;
+        return 0;
+    }
+
     @Override
-    @ParametersAreNonnullByDefault
     public @NotNull VoxelShape getShape(BlockState state, BlockGetter getter, BlockPos pos, CollisionContext context) {
-        return shapesCache.get(state);
+        VoxelShape shape = shapesCache.get(state);
+        if (shape != null) return shape;
+        return Shapes.block();
     }
 
     @Override
@@ -94,19 +107,11 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
     }
 
     @Override
-    @ParametersAreNonnullByDefault
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter getter, BlockPos pos) {
-        return true;
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ActivePortBlockEntity(pos, state);
     }
 
     @Override
-    @ParametersAreNonnullByDefault
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
         return createTickerHelper(pBlockEntityType, BlackHoleStorage.ACTIVE_PORT_BLOCK_ENTITY.get(), ActivePortBlockEntity::tick);
     }
@@ -125,11 +130,18 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
         return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
+    @Override
+    public @NotNull BlockState updateShape(BlockState pState, Direction pDirection, BlockState pNeighborState, LevelAccessor pLevel, BlockPos pCurrentPos, BlockPos pNeighborPos) {
+        if (pState.getValue(WATERLOGGED)) {
+            pLevel.scheduleTick(pCurrentPos, Fluids.WATER, Fluids.WATER.getTickDelay(pLevel));
+        }
+        return super.updateShape(pState, pDirection, pNeighborState, pLevel, pCurrentPos, pNeighborPos);
+    }
+
 
     //外观相关
 
     @Override
-    @ParametersAreNonnullByDefault
     public @NotNull RenderShape getRenderShape(BlockState pState) {
         return RenderShape.MODEL;
     }
@@ -138,7 +150,6 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
     //互动
 
     @Override
-    @ParametersAreNonnullByDefault
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, @Nullable LivingEntity pPlacer, ItemStack pStack) {
         if (pPlacer instanceof ServerPlayer player && !pStack.getOrCreateTag().contains("BlockEntityTag")) {
             ActivePortBlockEntity blockEntity = (ActivePortBlockEntity) pLevel.getBlockEntity(pPos);
@@ -147,7 +158,6 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
     }
 
     @Override
-    @ParametersAreNonnullByDefault
     public @NotNull InteractionResult use(BlockState pState, Level level, BlockPos pPos, Player player, InteractionHand pHand, BlockHitResult pHit) {
         if (!level.isClientSide && !player.isSpectator()) {
             if (level.getBlockEntity(pPos) instanceof ActivePortBlockEntity activePort) {
@@ -162,7 +172,8 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                     activePort.setLocked(false);
                 }
 
-                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {});
+                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {
+                });
                 else {
                     Vec3 vec3 = pHit.getLocation().subtract(pPos.getX(), pPos.getY(), pPos.getZ());
                     Direction direction;
@@ -170,7 +181,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                     else if (vec3.z >= 0.875) direction = Direction.SOUTH;
                     else if (vec3.x <= 0.125) direction = Direction.WEST;
                     else if (vec3.x >= 0.875) direction = Direction.EAST;
-                    //else if (vec3.y <= 0.125) direction = Direction.DOWN;
+                        //else if (vec3.y <= 0.125) direction = Direction.DOWN;
                     else if (vec3.y >= 0.875) direction = Direction.UP;
                     else direction = Direction.DOWN;
                     NetworkHooks.openScreen((ServerPlayer) player, new ActivePortMenuProvider(activePort), buf -> {
