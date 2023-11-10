@@ -97,6 +97,7 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     }
 
     public int canStorageAmount(ItemStack itemStack) {
+        if (itemStack.hasTag()) return 0;
         long a = storageItems.getOrDefault(Tools.getItemId(itemStack.getItem()), 0L);
         if (a == 0L) {
             if (getChannelSize() >= maxChannelSize) return 0;
@@ -106,12 +107,23 @@ public abstract class Channel implements IItemHandler, IFluidHandler, IEnergySto
     }
 
     public int canStorageAmount(FluidStack fluidStack) {
+        if (fluidStack.hasTag()) return 0;
         long a = storageFluids.getOrDefault(Tools.getFluidId(fluidStack.getFluid()), 0L);
         if (a == 0L) {
             if (getChannelSize() >= maxChannelSize) return 0;
             else return Integer.MAX_VALUE;
         }
         return (int) Math.min(Integer.MAX_VALUE, Long.MAX_VALUE - a);
+    }
+
+    public long canStorageRealAmount(FluidStack fluidStack) {
+        if (fluidStack.hasTag()) return 0;
+        long a = storageFluids.getOrDefault(Tools.getFluidId(fluidStack.getFluid()), 0L);
+        if (a == 0L) {
+            if (getChannelSize() >= maxChannelSize) return 0;
+            else return Long.MAX_VALUE;
+        }
+        return Long.MAX_VALUE - a;
     }
 
     public boolean canStorageItem(String item) {

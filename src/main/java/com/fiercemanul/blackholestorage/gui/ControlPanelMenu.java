@@ -595,7 +595,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 }
                 if (!resultFluidStack.isEmpty()) {
                     String fluid = Tools.getFluidId(resultFluidStack.getFluid());
-                    long canStoredAmount = Long.MAX_VALUE - channel.storageFluids.getOrDefault(fluid, 0L);
+                    long canStoredAmount = channel.canStorageRealAmount(resultFluidStack);
                     if (canStoredAmount > 0L) {
                         long removedAmount = 0L;
                         //规避限速，最大循环1024次，防止过度循环。
