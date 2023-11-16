@@ -1854,6 +1854,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 craftSlots.setItem(slotIndex, otherStack);
                 player.getInventory().setItem(i, ItemStack.EMPTY);
                 flag = false;
+                break;
             }
         }
         if (flag) for (int i = 0; i < 9; i++) {
@@ -1861,6 +1862,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (ItemStack.isSameItemSameTags(stack, otherStack)) {
                 craftSlots.setItem(slotIndex, otherStack);
                 player.getInventory().setItem(i, ItemStack.EMPTY);
+                break;
             }
         }
     }

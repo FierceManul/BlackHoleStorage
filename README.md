@@ -1,4 +1,4 @@
 # BlackHoleStorage
-MC Mod
+MC mod
 
-### Mod is WIP!
+### This is a late-game-based storage mod.
