@@ -128,9 +128,9 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    compileOnly fg.deobf("mezz.jei:jei-1.19.2-common-api:${jei_version}")
-    compileOnly fg.deobf("mezz.jei:jei-1.19.2-forge-api:${jei_version}")
-    runtimeOnly fg.deobf("mezz.jei:jei-1.19.2-forge:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${jei_common_api_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${jei_api_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${jei_version}")
 
     implementation fg.deobf(project.dependencies.create("mcjty.theoneprobe:theoneprobe:${top_version}") {
         transitive = false
