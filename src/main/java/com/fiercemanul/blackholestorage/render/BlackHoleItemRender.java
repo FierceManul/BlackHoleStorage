@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.data.EmptyModelData;
 
 @OnlyIn(Dist.CLIENT)
 public class BlackHoleItemRender extends BlockEntityWithoutLevelRenderer {
@@ -53,7 +53,7 @@ public class BlackHoleItemRender extends BlockEntityWithoutLevelRenderer {
                     .setValue(BlockStateProperties.UP, stateTag.getString("up").equals("true"))
                     .setValue(BlockStateProperties.DOWN, stateTag.getString("down").equals("true"));
         }
-        renderer.renderSingleBlock(state, poseStack, buffer, packedLight, packedOverlay, ModelData.EMPTY, null);
+        renderer.renderSingleBlock(state, poseStack, buffer, packedLight, packedOverlay, EmptyModelData.INSTANCE);
 
         //BlockStateTag
 

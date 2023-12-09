@@ -16,7 +16,7 @@ import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
@@ -48,12 +48,17 @@ public class ControlPanelRecipeHandler<R> implements IRecipeTransferHandler<Cont
     }
 
     @Override
+    public Class<R> getRecipeClass() {
+        return null;
+    }
+
+    //@Override
     public @NotNull Optional<MenuType<ControlPanelMenu>> getMenuType() {
         return Optional.of(BlackHoleStorage.CONTROL_PANEL_MENU.get());
     }
 
     @SuppressWarnings("all")
-    @Override
+    //@Override
     public RecipeType<R> getRecipeType() {
         return null;
     }
@@ -145,7 +150,7 @@ public class ControlPanelRecipeHandler<R> implements IRecipeTransferHandler<Cont
                 }
             }
             if (missingSlots.size() > 0) return helper.createUserErrorForMissingSlots(
-                    Component.translatable("bhs.GUI.craft.missing"),
+                    new TranslatableComponent("bhs.GUI.craft.missing"),
                     missingSlots
             );
         }

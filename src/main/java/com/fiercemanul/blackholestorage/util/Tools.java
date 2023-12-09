@@ -1,5 +1,7 @@
 package com.fiercemanul.blackholestorage.util;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -18,6 +20,7 @@ public class Tools {
     private static final HashMap<String, Item> ID_ITEM_MAP = new HashMap<>();
     private static final HashMap<Fluid, String> FLUID_ID_MAP = new HashMap<>();
     private static final HashMap<String, Fluid> ID_FLUID_MAP = new HashMap<>();
+    public static final Component EMPTY_COMPONENT = new TextComponent("");
 
     public static int sortFromCount(String s1, String s2, HashMap<String, Long> storageItems, boolean reverseOrder) {
         int i;

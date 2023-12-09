@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -53,11 +54,11 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         this.addRenderableWidget(new RenameButton(leftPos + 116, topPos + 222));
         this.addRenderableWidget(new DeleteButton(leftPos + 70, topPos + 222));
         this.addRenderableWidget(new BackButton(leftPos + 175, topPos + 222));
-        this.searchBox = new EditBox(this.font, leftPos + 41, topPos + 192, 114, 10, Component.translatable("bhs.GUI.search"));
+        this.searchBox = new EditBox(this.font, leftPos + 41, topPos + 192, 114, 10, new TranslatableComponent("bhs.GUI.search"));
         this.searchBox.setMaxLength(64);
         this.searchBox.setBordered(false);
         this.addRenderableWidget(searchBox);
-        this.nameBox = new EditBox(this.font, leftPos + 41, topPos + 209, 114, 10, Component.translatable("bhs.GUI.name"));
+        this.nameBox = new EditBox(this.font, leftPos + 41, topPos + 209, 114, 10, new TranslatableComponent("bhs.GUI.name"));
         this.nameBox.setMaxLength(64);
         this.nameBox.setBordered(false);
         this.addRenderableWidget(nameBox);
@@ -261,10 +262,10 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
-            list.add(Component.translatable("bhs.GUI.addChannel.tip1", nameBox.getValue()).getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.addChannel.tip2").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.addChannel.tip3").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.addChannel.tip4").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.addChannel.tip1", nameBox.getValue()).getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.addChannel.tip2").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.addChannel.tip3").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.addChannel.tip4").getVisualOrderText());
             ChannelSelectScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
@@ -295,7 +296,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             if (channelManager.selectedChannelName.isEmpty()) {
-                list.add(Component.translatable("bhs.GUI.emptyChannel.tip4").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.emptyChannel.tip4").getVisualOrderText());
             } else {
                 String flag1 = "";
                 boolean permissions = true;
@@ -305,9 +306,9 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
                     flag1 = "§c";
                     permissions = false;
                 }
-                list.add(Component.translatable("bhs.GUI.renameChannel.tip1", flag1 + channelManager.selectedChannelName).getVisualOrderText());
-                list.add(Component.translatable("bhs.GUI.renameChannel.tip2", flag1 + nameBox.getValue()).getVisualOrderText());
-                if (!permissions) list.add(Component.translatable("bhs.GUI.noPermission.tip3").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.renameChannel.tip1", flag1 + channelManager.selectedChannelName).getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.renameChannel.tip2", flag1 + nameBox.getValue()).getVisualOrderText());
+                if (!permissions) list.add(new TranslatableComponent("bhs.GUI.noPermission.tip3").getVisualOrderText());
             }
             ChannelSelectScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }
@@ -336,7 +337,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
             if (channelManager.selectedChannelName.isEmpty()) {
-                list.add(Component.translatable("bhs.GUI.emptyChannel.tip4").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.emptyChannel.tip4").getVisualOrderText());
             } else {
                 String flag1 = "";
                 boolean permissions = true;
@@ -345,9 +346,9 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
                     flag1 = "§c";
                     permissions = false;
                 }
-                list.add(Component.translatable("bhs.GUI.removeChannel.tip1", flag1 + channelManager.selectedChannelName).getVisualOrderText());
-                list.add(Component.translatable("bhs.GUI.removeChannel.tip2").getVisualOrderText());
-                if (!permissions) list.add(Component.translatable("bhs.GUI.noPermission.tip3").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.removeChannel.tip1", flag1 + channelManager.selectedChannelName).getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.removeChannel.tip2").getVisualOrderText());
+                if (!permissions) list.add(new TranslatableComponent("bhs.GUI.noPermission.tip3").getVisualOrderText());
             }
             ChannelSelectScreen.this.renderToolTip(pPoseStack, list, pMouseX, pMouseY);
         }

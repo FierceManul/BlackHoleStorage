@@ -6,7 +6,8 @@ import com.fiercemanul.blackholestorage.network.*;
 import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -16,9 +17,9 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
@@ -72,21 +73,21 @@ public class ServerChannelManager {
 
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        this.userCache.getCompound("nameCache").putString(event.getEntity().getUUID().toString(), event.getEntity().getGameProfile().getName());
+        this.userCache.getCompound("nameCache").putString(event.getEntity().getUUID().toString(), event.getEntity().getName().getString());
         NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new NameCachePack(userCache));
-        if (!loadSuccess) event.getEntity().getServer().getPlayerList().broadcastSystemMessage(Component.translatable("blackholestorage.load_error"), false);
+        if (!loadSuccess) event.getEntity().getServer().getPlayerList().broadcastMessage(new TranslatableComponent("blackholestorage.load_error"), ChatType.SYSTEM, BlackHoleStorage.FAKE_PLAYER_UUID);
     }
 
     @SubscribeEvent
-    public void onTick(TickEvent.ServerTickEvent event) {
-        int tickCount = event.getServer().getTickCount();
+    public void onTick(TickEvent.WorldTickEvent event) {
+        int tickCount = event.world.getServer().getTickCount();
         if (tickCount % Config.CHANNEL_FULL_UPDATE_RATE.get() == 0) channelList.forEach((uuid, map) -> map.forEach((id, channel) -> channel.sendFullUpdate()));
         else if (tickCount % Config.CHANNEL_FAST_UPDATE_RATE.get() == 0) channelList.forEach((uuid, map) -> map.forEach((id, channel) -> channel.sendUpdate()));
     }
 
     @SubscribeEvent
-    public void onLevelSave(LevelEvent.Save event) {
-        if (isOverworld(event.getLevel())) save(event.getLevel().getServer());
+    public void onLevelSave(WorldEvent.Save event) {
+        if (isOverworld(event.getWorld())) save(event.getWorld().getServer());
     }
 
     @SubscribeEvent
@@ -166,7 +167,7 @@ public class ServerChannelManager {
             });
 
         } catch (Exception e) {
-            server.getPlayerList().broadcastSystemMessage(Component.translatable("blackholestorage.save_error"), false);
+            server.getPlayerList().broadcastMessage(new TranslatableComponent("blackholestorage.save_error"), ChatType.SYSTEM, BlackHoleStorage.FAKE_PLAYER_UUID);
             throw new RuntimeException("黑洞储存在保存数据的时候出错了！ 什么情况呢？", e);
         }
     }

@@ -40,12 +40,12 @@ public class ClientChannelManager {
     }
 
     @SubscribeEvent
-    public static void onLoggingInServer(ClientPlayerNetworkEvent.LoggingIn event) {
+    public static void onLoggingInServer(ClientPlayerNetworkEvent.LoggedInEvent event) {
         newInstance();
     }
 
     @SubscribeEvent
-    public void onLoggingOutServer(ClientPlayerNetworkEvent.LoggingOut event) {
+    public void onLoggingOutServer(ClientPlayerNetworkEvent.LoggedOutEvent event) {
         MinecraftForge.EVENT_BUS.unregister(this);
         instance = null;
     }

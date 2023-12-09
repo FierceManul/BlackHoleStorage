@@ -4,7 +4,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
 public class ItemInputRule extends Rule{
@@ -19,7 +19,7 @@ public class ItemInputRule extends Rule{
 
     @Override
     public void work(ServerChannel channel, BlockEntity blockEntity, Direction targetFace) {
-        blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, targetFace).ifPresent(itemHandler -> {
+        blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, targetFace).ifPresent(itemHandler -> {
             if (!channel.canStorageItem(value)) return;
             if (worked(itemHandler, lastSlot, channel)) return;
             int maxSlots = itemHandler.getSlots();

@@ -17,7 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.minecraftforge.fluids.FluidAttributes;
 import net.minecraftforge.fluids.FluidStack;
 import org.lwjgl.opengl.GL11;
 
@@ -148,14 +148,15 @@ public final class FluidItemRender {
             RenderSystem.disableBlend();
         }
         RenderSystem.enableTexture();
-        BufferUploader.drawWithShader(bufferbuilder.end());
+        bufferbuilder.end();
+        BufferUploader.end(bufferbuilder);
     }
 
     public static void renderFluid(FluidStack fluidStack, PoseStack poseStack, int x, int y, int z) {
-        IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(fluidStack.getFluid());
+        FluidAttributes attributes = fluidStack.getFluid().getAttributes();
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(attributes.getStillTexture(fluidStack));
         sprite(sprite)
-                .colorRgb(attributes.getTintColor(fluidStack))
+                .colorRgb(attributes.getColor())
                 .blending(false)
                 .dest(x, y, 16, 16)
                 .blit(poseStack, z);

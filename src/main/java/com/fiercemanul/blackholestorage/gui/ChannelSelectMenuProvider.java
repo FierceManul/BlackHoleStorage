@@ -1,6 +1,7 @@
 package com.fiercemanul.blackholestorage.gui;
 
 import com.fiercemanul.blackholestorage.channel.IChannelTerminal;
+import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -19,7 +20,7 @@ public final class ChannelSelectMenuProvider implements MenuProvider {
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.literal("");
+        return Tools.EMPTY_COMPONENT;
     }
 
     @Override

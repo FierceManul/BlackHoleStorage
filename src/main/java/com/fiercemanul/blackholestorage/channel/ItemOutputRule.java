@@ -4,7 +4,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.CapabilityItemHandler;
 
 public class ItemOutputRule extends Rule{
 
@@ -18,7 +18,7 @@ public class ItemOutputRule extends Rule{
 
     @Override
     public void work(ServerChannel channel, BlockEntity blockEntity, Direction targetFace) {
-        blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, targetFace).ifPresent(itemHandler -> {
+        blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, targetFace).ifPresent(itemHandler -> {
             if (!channel.hasItem(value)) return;
             ItemStack testStack = new ItemStack(item, Integer.min(channel.getItemAmount(value), rate));
             ItemStack afterStack = itemHandler.insertItem(lastSlot, testStack, true);

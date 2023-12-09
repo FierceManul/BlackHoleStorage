@@ -83,7 +83,7 @@ public class PassivePortMenu extends AbstractContainerMenu {
 
     private void openChannelScreen() {
         if (locked) return;
-        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {});
+        NetworkHooks.openGui((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {});
     }
 
     @Override

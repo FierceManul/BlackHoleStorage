@@ -1,10 +1,10 @@
 package com.fiercemanul.blackholestorage.gui;
 
 
+import com.fiercemanul.blackholestorage.util.Tools;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FastColor;
 import net.minecraftforge.api.distmarker.Dist;
@@ -28,7 +28,7 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     }
 
     public SimpleScrollBar(int x, int y, int weight, int height) {
-        this(x, y, weight, height, CommonComponents.EMPTY);
+        this(x, y, weight, height, Tools.EMPTY_COMPONENT);
     }
 
     public void setScrollBarTagColor(int scrollBarTagColor) {

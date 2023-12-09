@@ -19,9 +19,11 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -211,9 +213,9 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
         else if (side == Direction.EAST && !east) return LazyOptional.empty();
         else if (side == Direction.UP && !up) return LazyOptional.empty();
         else if (side == Direction.DOWN && !down) return LazyOptional.empty();
-        else if (cap == ForgeCapabilities.ITEM_HANDLER
-                || cap == ForgeCapabilities.FLUID_HANDLER
-                || cap == ForgeCapabilities.ENERGY) {
+        else if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY
+                || cap == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY
+                || cap == CapabilityEnergy.ENERGY) {
             return capability.cast();
         }
         return LazyOptional.empty();

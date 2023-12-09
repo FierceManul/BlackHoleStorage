@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -38,9 +39,9 @@ public class PortableControlPanelItem extends Item {
             UUID ownerUUID = nbt.getUUID("owner");
             String ownerName = ClientChannelManager.getInstance().getUserName(nbt.getUUID("owner"));
             boolean lock = nbt.getBoolean("locked");
-            if (selfUUID.equals(ownerUUID)) pTooltipComponents.add(Component.translatable("bhs.GUI.owner", "§a" + ownerName));
-            else if (lock) pTooltipComponents.add(Component.translatable("bhs.GUI.owner", "§c" + ownerName));
-            else pTooltipComponents.add(Component.translatable("bhs.GUI.owner", ownerName));
+            if (selfUUID.equals(ownerUUID)) pTooltipComponents.add(new TranslatableComponent("bhs.GUI.owner", "§a" + ownerName));
+            else if (lock) pTooltipComponents.add(new TranslatableComponent("bhs.GUI.owner", "§c" + ownerName));
+            else pTooltipComponents.add(new TranslatableComponent("bhs.GUI.owner", ownerName));
         }
     }
 
@@ -59,7 +60,7 @@ public class PortableControlPanelItem extends Item {
                 if (!nbt.contains("viewType")) nbt.putByte("viewType", (byte) 0);
             }
             if (nbt.contains("channel")) {
-                NetworkHooks.openScreen((ServerPlayer) pPlayer, new ControlPanelMenuProvider(slotIndex), buf -> {
+                NetworkHooks.openGui((ServerPlayer) pPlayer, new ControlPanelMenuProvider(slotIndex), buf -> {
                     buf.writeBlockPos(BlockPos.ZERO);
                     buf.writeInt(slotIndex);
                     buf.writeUUID(nbt.getUUID("owner"));
@@ -72,7 +73,7 @@ public class PortableControlPanelItem extends Item {
                     buf.writeInt(nbt.getCompound("channel").getInt("channelID"));
                 });
             } else {
-                NetworkHooks.openScreen((ServerPlayer) pPlayer, new ChannelSelectMenuProvider(new ItemChannelTerminal(pPlayer.getInventory(), panel, slotIndex)), buf -> {});
+                NetworkHooks.openGui((ServerPlayer) pPlayer, new ChannelSelectMenuProvider(new ItemChannelTerminal(pPlayer.getInventory(), panel, slotIndex)), buf -> {});
             }
         }
         return InteractionResultHolder.pass(pPlayer.getItemInHand(pUsedHand));

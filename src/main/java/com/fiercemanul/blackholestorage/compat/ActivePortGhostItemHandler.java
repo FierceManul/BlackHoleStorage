@@ -15,10 +15,26 @@ public class ActivePortGhostItemHandler implements IGhostIngredientHandler<Activ
 
     @Override
     public <I> @NotNull List<Target<I>> getTargets(ActivePortScreen gui, I ingredient, boolean doStart) {
-        return new LinkedList<>();
+        List<Target<I>> targets = new LinkedList<>();
+        if (!gui.getMenu().checkedSlotActive()) return targets;
+        if (ingredient instanceof ITypedIngredient<?> iTypedIngredient) {
+            iTypedIngredient.getItemStack().ifPresent(itemStack -> targets.add(new Target<>() {
+
+                @Override
+                public @NotNull Rect2i getArea() {
+                    return new Rect2i(gui.getGuiLeft() + 31, gui.getGuiTop() + 146, 16, 16);
+                }
+
+                @Override
+                public void accept(I ingredient) {
+                    gui.jeiGhostItemRule(itemStack);
+                }
+            }));
+        }
+        return targets;
     }
 
-    @Override
+    //@Override
     public <I> @NotNull List<Target<I>> getTargetsTyped(ActivePortScreen gui, ITypedIngredient<I> ingredient, boolean doStart) {
         List<Target<I>> targets = new LinkedList<>();
         if (!gui.getMenu().checkedSlotActive()) return targets;

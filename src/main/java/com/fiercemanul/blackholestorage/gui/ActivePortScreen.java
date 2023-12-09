@@ -15,9 +15,9 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -121,10 +121,10 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
     protected void renderTooltip(PoseStack pPoseStack, int pX, int pY) {
         if (hoveredSlot != null && menu.getCarried().isEmpty() && hoveredSlot.index > 36) {
             if (hoveredSlot.hasItem() && hoveredSlot.getItem().getItem().equals(BlackHoleStorage.FORGE_ENERGY.get())) {
-                renderTooltip(pPoseStack, Component.translatable("item.blackholestorage.forge_energy"), pX, pY);
+                renderTooltip(pPoseStack, new TranslatableComponent("item.blackholestorage.forge_energy"), pX, pY);
                 return;
             } else if (menu.hasRule(hoveredSlot.getContainerSlot()) && menu.getRule(hoveredSlot.getContainerSlot()).ruleType.equals(RuleType.FLUID)) {
-                renderTooltip(pPoseStack, Component.translatable("block." + menu.getRule(hoveredSlot.getContainerSlot()).value.replace(':', '.')), pX, pY);
+                renderTooltip(pPoseStack, new TranslatableComponent("block." + menu.getRule(hoveredSlot.getContainerSlot()).value.replace(':', '.')), pX, pY);
             }
         } else if (choosingRuleDisplayLabel.isHovered()) choosingRuleDisplayLabel.renderToolTip(pPoseStack, pX, pY);
         super.renderTooltip(pPoseStack, pX, pY);
@@ -201,7 +201,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         private final float tx;
         private final float ty;
         private final List<FormattedCharSequence> portTip;
-        private static final FormattedCharSequence tip = Component.translatable("bhs.GUI.port.tip").getVisualOrderText();
+        private static final FormattedCharSequence tip = new TranslatableComponent("bhs.GUI.port.tip").getVisualOrderText();
 
         public PortButton(InfoPort port, String name, int pX, int pY, int pXTexStart, int pYTexStart) {
             super(pX, pY, 17, 17, pXTexStart, pYTexStart, GUI_IMG, pButton -> {
@@ -216,7 +216,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             });
             this.port = port;
             this.portTip = new ArrayList<>();
-            portTip.add(Component.translatable("bhs.GUI.port." + name).getVisualOrderText());
+            portTip.add(new TranslatableComponent("bhs.GUI.port." + name).getVisualOrderText());
             this.tx = pXTexStart;
             this.ty = pYTexStart;
         }
@@ -261,7 +261,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
                 menu.dummyContainer.updateItem();
             });
             this.input = input;
-            this.component = input ? Component.translatable("bhs.GUI.port.input") : Component.translatable("bhs.GUI.port.output");
+            this.component = input ? new TranslatableComponent("bhs.GUI.port.input") : new TranslatableComponent("bhs.GUI.port.output");
             this.tx = pXTexStart;
             this.ty = pYTexStart;
         }
@@ -301,7 +301,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
-            renderTooltip(pPoseStack, Component.translatable("bhs.GUI.rate.tip"), pMouseX, pMouseY);
+            renderTooltip(pPoseStack, new TranslatableComponent("bhs.GUI.rate.tip"), pMouseX, pMouseY);
         }
     }
 
@@ -316,9 +316,9 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 0);
                 menu.locked = !menu.locked;
             });
-            componentA = Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
-            componentB = Component.translatable("bhs.GUI.owner", "§c" + ownerName);
-            componentC = Component.translatable("bhs.GUI.owner", ownerName);
+            componentA = new TranslatableComponent("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
+            componentB = new TranslatableComponent("bhs.GUI.owner", "§c" + ownerName);
+            componentC = new TranslatableComponent("bhs.GUI.owner", ownerName);
         }
 
         @Override
@@ -350,16 +350,16 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             super(pX, pY, 19, 16, 202, 136, GUI_IMG, pButton ->
                     minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 1));
             if (menu.channelOwner.equals(menu.player.getUUID())) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§a" + menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§a" + menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§c" + menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§c" + menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
         }
 
@@ -483,7 +483,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         private FluidStack fluidStack;
 
         public RuleDisplayLabel(int id, int pX, int pY, int pWidth, int pHeight) {
-            super(pX, pY, pWidth, pHeight, CommonComponents.EMPTY);
+            super(pX, pY, pWidth, pHeight, Tools.EMPTY_COMPONENT);
             this.id = id;
             this.rule = menu.getRule(id);
             setString();
@@ -547,7 +547,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         private String stringTemp;
 
         public ChoosingRuleDisplayLabel(int pX, int pY, int pWidth, int pHeight) {
-            super(pX, pY, pWidth, pHeight, CommonComponents.EMPTY);
+            super(pX, pY, pWidth, pHeight, Tools.EMPTY_COMPONENT);
             rule = menu.choosingRules.getChoosingRule();
             setString();
         }

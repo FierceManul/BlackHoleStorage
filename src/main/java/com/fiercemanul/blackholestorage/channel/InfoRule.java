@@ -1,8 +1,8 @@
 package com.fiercemanul.blackholestorage.channel;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 public final class InfoRule {
 
@@ -32,14 +32,14 @@ public final class InfoRule {
 
     public MutableComponent getDisplay() {
         return switch (ruleType) {
-            case ITEM -> Component.translatable("bhs.GUI.rule.item", value);
-            case ITEM_TAG -> Component.translatable("bhs.GUI.rule.item_tag", value);
-            case FLUID -> Component.translatable("bhs.GUI.rule.fluid", value);
-            case FORGE_ENERGY -> Component.translatable("bhs.GUI.rule.fe");
-            case MOD_ITEM -> Component.translatable("bhs.GUI.rule.mod_item", value);
-            case MOD_FLUID -> Component.translatable("bhs.GUI.rule.mod_fluid", value);
-            case ANY_ITEM -> Component.translatable("bhs.GUI.rule.any_item");
-            case ANY_FLUID -> Component.translatable("bhs.GUI.rule.any_fluid");
+            case ITEM -> new TranslatableComponent("bhs.GUI.rule.item", value);
+            case ITEM_TAG -> new TranslatableComponent("bhs.GUI.rule.item_tag", value);
+            case FLUID -> new TranslatableComponent("bhs.GUI.rule.fluid", value);
+            case FORGE_ENERGY -> new TranslatableComponent("bhs.GUI.rule.fe");
+            case MOD_ITEM -> new TranslatableComponent("bhs.GUI.rule.mod_item", value);
+            case MOD_FLUID -> new TranslatableComponent("bhs.GUI.rule.mod_fluid", value);
+            case ANY_ITEM -> new TranslatableComponent("bhs.GUI.rule.any_item");
+            case ANY_FLUID -> new TranslatableComponent("bhs.GUI.rule.any_fluid");
         };
     }
 }

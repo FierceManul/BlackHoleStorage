@@ -6,7 +6,8 @@ import com.fiercemanul.blackholestorage.gui.PassivePortMenuProvider;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -208,7 +209,7 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
             if (level.getBlockEntity(pos) instanceof PassivePortBlockEntity passivePort) {
 
                 if (passivePort.hasUser()) {
-                    ((ServerPlayer) player).sendSystemMessage(Component.translatable("blackholestorage.tip.using"), true);
+                    ((ServerPlayer) player).sendMessage(new TranslatableComponent("blackholestorage.tip.using"), ChatType.SYSTEM, BlackHoleStorage.FAKE_PLAYER_UUID);
                     return InteractionResult.FAIL;
                 }
 
@@ -217,10 +218,10 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
                     passivePort.setLocked(false);
                 }
 
-                if (passivePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {
+                if (passivePort.getChannelInfo() == null) NetworkHooks.openGui((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {
                 });
                 else {
-                    NetworkHooks.openScreen((ServerPlayer) player, new PassivePortMenuProvider(passivePort), buf -> {
+                    NetworkHooks.openGui((ServerPlayer) player, new PassivePortMenuProvider(passivePort), buf -> {
                         buf.writeUUID(passivePort.getOwner());
                         buf.writeBoolean(passivePort.isLocked());
                         buf.writeBlockPos(pos);

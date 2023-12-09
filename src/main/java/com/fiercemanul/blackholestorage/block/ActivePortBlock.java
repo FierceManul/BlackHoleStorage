@@ -6,7 +6,7 @@ import com.fiercemanul.blackholestorage.gui.ChannelSelectMenuProvider;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -163,7 +163,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
             if (level.getBlockEntity(pPos) instanceof ActivePortBlockEntity activePort) {
 
                 if (activePort.hasUser()) {
-                    ((ServerPlayer) player).sendSystemMessage(Component.translatable("blackholestorage.tip.using"), true);
+                    player.sendMessage(new TranslatableComponent("blackholestorage.tip.using"), BlackHoleStorage.FAKE_PLAYER_UUID);
                     return InteractionResult.FAIL;
                 }
 
@@ -172,7 +172,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                     activePort.setLocked(false);
                 }
 
-                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {
+                if (activePort.getChannelInfo() == null) NetworkHooks.openGui((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {
                 });
                 else {
                     Vec3 vec3 = pHit.getLocation().subtract(pPos.getX(), pPos.getY(), pPos.getZ());
@@ -184,7 +184,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                         //else if (vec3.y <= 0.125) direction = Direction.DOWN;
                     else if (vec3.y >= 0.875) direction = Direction.UP;
                     else direction = Direction.DOWN;
-                    NetworkHooks.openScreen((ServerPlayer) player, new ActivePortMenuProvider(activePort), buf -> {
+                    NetworkHooks.openGui((ServerPlayer) player, new ActivePortMenuProvider(activePort), buf -> {
                         buf.writeUUID(activePort.getOwner());
                         buf.writeBoolean(activePort.isLocked());
                         buf.writeBlockPos(pPos);

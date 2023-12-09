@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -146,9 +147,9 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 6);
                 menu.locked = !menu.locked;
             });
-            componentA = Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
-            componentB = Component.translatable("bhs.GUI.owner", "§c" + ownerName);
-            componentC = Component.translatable("bhs.GUI.owner", ownerName);
+            componentA = new TranslatableComponent("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
+            componentB = new TranslatableComponent("bhs.GUI.owner", "§c" + ownerName);
+            componentC = new TranslatableComponent("bhs.GUI.owner", ownerName);
         }
 
         @Override
@@ -180,16 +181,16 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
             super(pX, pY, 17, 17, 202, 136, GUI_IMG, pButton ->
                     minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 7));
             if (menu.channelOwner.equals(menu.player.getUUID())) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§a" + menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§a" + menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§c" + menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§c" + menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", menu.channelName).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", menu.channelName).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
         }
 

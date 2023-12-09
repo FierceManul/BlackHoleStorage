@@ -2,8 +2,8 @@ package com.fiercemanul.blackholestorage.channel;
 
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 
 public class AnyFluidRule extends Rule {
@@ -14,7 +14,7 @@ public class AnyFluidRule extends Rule {
 
     @Override
     public void work(ServerChannel channel, BlockEntity blockEntity, Direction targetFace) {
-        blockEntity.getCapability(ForgeCapabilities.FLUID_HANDLER, targetFace).ifPresent(fluidHandler -> {
+        blockEntity.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, targetFace).ifPresent(fluidHandler -> {
             FluidStack fluidStack = fluidHandler.drain(rate, IFluidHandler.FluidAction.SIMULATE);
             if (fluidStack.isEmpty()) return;
             int count = channel.addFluid(fluidStack);

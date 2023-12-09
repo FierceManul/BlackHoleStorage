@@ -10,8 +10,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.Container;
@@ -26,7 +27,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -187,7 +188,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
 
     private void openChannelScreen() {
         if (locked) return;
-        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {});
+        NetworkHooks.openGui((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {});
     }
 
     public InfoPort getSelectedPort() {
@@ -290,7 +291,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
                             if (!tagArrayList.contains(tag)) tagArrayList.add(tag);
                         });
                 tagArrayList.forEach(s -> choosingRules.rules.add(new InfoRule(RuleType.ITEM_TAG, s, 1)));
-                itemStack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(fluidHandler -> {
+                itemStack.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY).ifPresent(fluidHandler -> {
                     int tanks = fluidHandler.getTanks();
                     for (int i = 0; i < tanks; i++) {
                         Fluid fluid = fluidHandler.getFluidInTank(i).getFluid();
@@ -347,7 +348,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
                 if (start == 0) {
                     if (choosingIndex == 0) rulesTooltip.add(rules.get(0).getDisplay().withStyle(ChatFormatting.GREEN).getVisualOrderText());
                     else rulesTooltip.add(rules.get(0).getDisplay().withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
-                } else rulesTooltip.add(Component.literal("...").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+                } else rulesTooltip.add(new TextComponent("...").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
                 for (int i = start + 1; i < end; i++) {
                     if (i == choosingIndex) rulesTooltip.add(rules.get(i).getDisplay().withStyle(ChatFormatting.GREEN).getVisualOrderText());
                     else rulesTooltip.add(rules.get(i).getDisplay().withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
@@ -355,9 +356,9 @@ public class ActivePortMenu extends AbstractContainerMenu {
                 if (end == rules.size() - 1) {
                     if (choosingIndex == end) rulesTooltip.add(rules.get(end).getDisplay().withStyle(ChatFormatting.GREEN).getVisualOrderText());
                     else rulesTooltip.add(rules.get(end).getDisplay().withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
-                } else rulesTooltip.add(Component.literal("...").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+                } else rulesTooltip.add(new TextComponent("...").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
             }
-            rulesTooltip.add(Component.translatable("bhs.GUI.rule.tip").getVisualOrderText());
+            rulesTooltip.add(new TranslatableComponent("bhs.GUI.rule.tip").getVisualOrderText());
         }
 
         public InfoRule getChoosingRule() {

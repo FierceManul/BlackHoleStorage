@@ -11,7 +11,7 @@ import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.client.event.ModelBakeEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -28,11 +28,11 @@ public class ClientModEvents {
     }
 
     @SubscribeEvent
-    public static void onBakeModel(ModelEvent.BakingCompleted event) {
+    public static void onBakeModel(ModelBakeEvent event) {
         ModelResourceLocation location = new ModelResourceLocation(MODID, "passive_port", "inventory");
-        event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
+        event.getModelRegistry().put(location, new BlackHoleModel(event.getModelRegistry().get(location)));
         location = new ModelResourceLocation(MODID, "active_port", "inventory");
-        event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
+        event.getModelRegistry().put(location, new BlackHoleModel(event.getModelRegistry().get(location)));
     }
 
     @SubscribeEvent

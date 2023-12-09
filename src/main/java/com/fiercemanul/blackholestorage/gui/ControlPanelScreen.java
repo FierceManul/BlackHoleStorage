@@ -18,6 +18,8 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,7 +27,9 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -70,12 +74,12 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         this.sortButton = new SortButton(this.leftPos + 177, this.topPos + 176);
         this.addRenderableWidget(sortButton);
         this.addRenderableWidget(new ViewTypeButton(this.leftPos + 177, this.topPos + 159));
-        this.shortSearchBox = new EditBox(this.font, leftPos + 75, topPos + 126, 59, 9, Component.translatable("bhs.GUI.search"));
+        this.shortSearchBox = new EditBox(this.font, leftPos + 75, topPos + 126, 59, 9, new TranslatableComponent("bhs.GUI.search"));
         this.shortSearchBox.setMaxLength(64);
         this.shortSearchBox.setBordered(false);
         this.shortSearchBox.setVisible(menu.craftingMode);
         this.shortSearchBox.setValue(menu.filter);
-        this.longSearchBox = new EditBox(this.font, leftPos + 41, topPos + 163, 77, 9, Component.translatable("bhs.GUI.search"));
+        this.longSearchBox = new EditBox(this.font, leftPos + 41, topPos + 163, 77, 9, new TranslatableComponent("bhs.GUI.search"));
         this.longSearchBox.setMaxLength(64);
         this.longSearchBox.setBordered(false);
         this.longSearchBox.setVisible(!menu.craftingMode);
@@ -191,9 +195,9 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         } else {
             if (isInsideEditBox(pX, pY)) {
                 List<FormattedCharSequence> list = new ArrayList<>();
-                list.add(Component.translatable("bhs.GUI.search.tip1").getVisualOrderText());
-                list.add(Component.translatable("bhs.GUI.search.tip2").getVisualOrderText());
-                list.add(Component.translatable("bhs.GUI.search.tip3").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.search.tip1").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.search.tip2").getVisualOrderText());
+                list.add(new TranslatableComponent("bhs.GUI.search.tip3").getVisualOrderText());
                 renderTooltip(pPoseStack, list, pX, pY);
             } else if (sortButton.isHoveredOrFocused()) sortButton.renderToolTip(pPoseStack, pX, pY);
             else if (craftToChannelButton.isHoveredOrFocused()) craftToChannelButton.renderToolTip(pPoseStack, pX, pY);
@@ -211,8 +215,8 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             components = this.getTooltipFromItem(hoveredSlot.getItem());
             count = menu.channel.getRealItemAmount(hoveredObject[1]);
         } else if (hoveredObject[0].equals("fluid")) {
-            components.add(Component.translatable("block." + hoveredObject[1].replace(':', '.')));
-            if (this.minecraft.options.advancedItemTooltips) components.add(Component.literal(hoveredObject[1]).withStyle(ChatFormatting.DARK_GRAY));
+            components.add(new TranslatableComponent("block." + hoveredObject[1].replace(':', '.')));
+            if (this.minecraft.options.advancedItemTooltips) components.add(new TextComponent(hoveredObject[1]).withStyle(ChatFormatting.DARK_GRAY));
             count = menu.channel.getRealFluidAmount(hoveredObject[1]);
         } else {
             components.add(hoveredSlot.getItem().getHoverName());
@@ -220,19 +224,19 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         }
         if (!Arrays.equals(hoveredObject, lastHoveredObject)) {
             String formatCount = Tools.DECIMAL_FORMAT.format(count);
-            components.add(Component.literal(formatCount));
+            components.add(new TextComponent(formatCount));
             this.lastHoveredObject = hoveredObject;
             this.lastCount = count;
             this.lastFormatCountTemp = formatCount;
         } else if (count == lastCount) {
-            components.add(Component.literal(lastFormatCountTemp));
+            components.add(new TextComponent(lastFormatCountTemp));
         } else {
             String formatCount = Tools.DECIMAL_FORMAT.format(count);
             long count2 = count - lastCount;
             String formatCount2 = Tools.DECIMAL_FORMAT.format(count2);
             if (count2 >= 0) formatCount += "  |  +§a" + formatCount2;
             else formatCount += "  |  §c" + formatCount2;
-            components.add(Component.literal(formatCount));
+            components.add(new TextComponent(formatCount));
             lastCount = count;
             lastFormatCountTemp = formatCount;
         }
@@ -241,23 +245,23 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
     private void renderObjectStorageTooltip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
         ItemStack carried = menu.getCarried();
-        boolean hasCapability = carried.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).isPresent()
-                || carried.getCapability(ForgeCapabilities.ENERGY).isPresent()
-                || carried.getCapability(ForgeCapabilities.ITEM_HANDLER).isPresent();
+        boolean hasCapability = carried.getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY).isPresent()
+                || carried.getCapability(CapabilityEnergy.ENERGY).isPresent()
+                || carried.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).isPresent();
         if (hasCapability) {
             List<Component> components = Lists.newArrayList();
             if ((hoveredSlot.index - 51) < menu.dummyContainer.viewingObject.size()) {
                 String[] hoveredObject = menu.dummyContainer.viewingObject.get(hoveredSlot.index - 51);
                 if (hoveredObject[0].equals("fluid")) {
-                    components.add(Component.translatable("bhs.GUI.capability.tip1",
-                            Component.translatable("block." + hoveredObject[1].replace(':', '.')).getString()
+                    components.add(new TranslatableComponent("bhs.GUI.capability.tip1",
+                            new TranslatableComponent("block." + hoveredObject[1].replace(':', '.')).getString()
                     ));
                 } else {
-                    components.add(Component.translatable("bhs.GUI.capability.tip1", hoveredSlot.getItem().getHoverName()));
+                    components.add(new TranslatableComponent("bhs.GUI.capability.tip1", hoveredSlot.getItem().getHoverName()));
                 }
             }
-            components.add(Component.translatable("bhs.GUI.capability.tip2"));
-            components.add(Component.translatable("bhs.GUI.capability.tip3"));
+            components.add(new TranslatableComponent("bhs.GUI.capability.tip2"));
+            components.add(new TranslatableComponent("bhs.GUI.capability.tip3"));
             this.renderTooltip(pPoseStack, components, ItemStack.EMPTY.getTooltipImage(), pMouseX, pMouseY);
         } else renderCounterTooltip(pPoseStack, pMouseX, pMouseY);
     }
@@ -502,9 +506,9 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         public ToggleLockButton(int pX, int pY) {
             super(pX, pY, 19, 16, 67, 215, GUI_IMG, pButton -> toggleLock());
-            componentA = Component.translatable("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
-            componentB = Component.translatable("bhs.GUI.owner", "§c" + ownerName);
-            componentC = Component.translatable("bhs.GUI.owner", ownerName);
+            componentA = new TranslatableComponent("bhs.GUI.owner", "§a" + menu.player.getGameProfile().getName());
+            componentB = new TranslatableComponent("bhs.GUI.owner", "§c" + ownerName);
+            componentC = new TranslatableComponent("bhs.GUI.owner", ownerName);
         }
 
         @Override
@@ -549,12 +553,12 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
-            list.add(Component.translatable(getSortKey(menu.sortType)).getVisualOrderText());
-            if (menu.sortType % 2 == 0) list.add(Component.translatable("bhs.GUI.sort.ascending").getVisualOrderText());
-            else list.add(Component.translatable("bhs.GUI.sort.descending").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.line").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.sort.tip1").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.sort.tip2").getVisualOrderText());
+            list.add(new TranslatableComponent(getSortKey(menu.sortType)).getVisualOrderText());
+            if (menu.sortType % 2 == 0) list.add(new TranslatableComponent("bhs.GUI.sort.ascending").getVisualOrderText());
+            else list.add(new TranslatableComponent("bhs.GUI.sort.descending").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.line").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.sort.tip1").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.sort.tip2").getVisualOrderText());
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);
         }
     }
@@ -584,16 +588,16 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         public ChannelButton(int pX, int pY) {
             super(pX, pY, 19, 16, 48, 215, GUI_IMG, pButton -> channelButtonPress());
             if (menu.channelOwner.equals(menu.player.getUUID())) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§a" + menu.channel.getName()).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§a" + menu.channel.getName()).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§a" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else if (!menu.channelOwner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", "§c" + menu.channel.getName()).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", "§c" + menu.channel.getName()).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", "§c" + ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
             else {
-                tips.add(Component.translatable("bhs.GUI.channel.tip1", menu.channel.getName()).getVisualOrderText());
-                tips.add(Component.translatable("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip1", menu.channel.getName()).getVisualOrderText());
+                tips.add(new TranslatableComponent("bhs.GUI.channel.tip2", ClientChannelManager.getInstance().getUserName(menu.channelOwner)).getVisualOrderText());
             }
         }
 
@@ -620,11 +624,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         private final List<FormattedCharSequence> list = new ArrayList<>();
         public CraftToChannelButton (int x, int y) {
             super(x, y, 16, 16, 0, 215, GUI_IMG, pButton -> {});
-            list.add(Component.translatable("bhs.GUI.craft.channel").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.channel").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
         @Override
@@ -639,11 +643,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         private final List<FormattedCharSequence> list = new ArrayList<>();
         public CraftToInventoryButton (int x, int y) {
             super(x, y, 16, 16, 16, 215, GUI_IMG, pButton -> {});
-            list.add(Component.translatable("bhs.GUI.craft.inv").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.inv").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
         @Override
@@ -658,11 +662,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         private final List<FormattedCharSequence> list = new ArrayList<>();
         public CraftAndDropButton (int x, int y) {
             super(x, y, 16, 16, 32, 215, GUI_IMG, pButton -> {});
-            list.add(Component.translatable("bhs.GUI.craft.drop").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip1").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
-            list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.drop").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip1").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip2").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip3").getVisualOrderText());
+            list.add(new TranslatableComponent("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
         @Override

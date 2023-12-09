@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -83,9 +84,9 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                 UUID ownerUUID = nbt.getUUID("owner");
                 String ownerName = ClientChannelManager.getInstance().getUserName(nbt.getUUID("owner"));
                 boolean lock = nbt.getBoolean("locked");
-                if (selfUUID.equals(ownerUUID)) pTooltip.add(Component.translatable("bhs.GUI.owner", "§a" + ownerName));
-                else if (lock) pTooltip.add(Component.translatable("bhs.GUI.owner", "§c" + ownerName));
-                else pTooltip.add(Component.translatable("bhs.GUI.owner", ownerName));
+                if (selfUUID.equals(ownerUUID)) pTooltip.add(new TranslatableComponent("bhs.GUI.owner", "§a" + ownerName));
+                else if (lock) pTooltip.add(new TranslatableComponent("bhs.GUI.owner", "§c" + ownerName));
+                else pTooltip.add(new TranslatableComponent("bhs.GUI.owner", ownerName));
             }
         }
     }
@@ -159,10 +160,10 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                 }
 
                 if (controlPanelBlockEntity.getChannelInfo() == null)
-                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {
+                    NetworkHooks.openGui((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {
                     });
                 else {
-                    NetworkHooks.openScreen((ServerPlayer) player, new ControlPanelMenuProvider(controlPanelBlockEntity), buf -> {
+                    NetworkHooks.openGui((ServerPlayer) player, new ControlPanelMenuProvider(controlPanelBlockEntity), buf -> {
                         buf.writeBlockPos(pos);
                         buf.writeInt(-2);
                         buf.writeUUID(controlPanelBlockEntity.getOwner());
