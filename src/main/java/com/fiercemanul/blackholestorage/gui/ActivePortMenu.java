@@ -20,6 +20,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -41,6 +42,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
     protected final Player player;
     protected final UUID owner;
     protected boolean locked;
+    private final ContainerLevelAccess access;
     protected final ActivePortBlockEntity activePort;
     protected final BlockPos blockPos;
     protected final UUID channelOwner;
@@ -65,6 +67,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
     public ActivePortMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
         super(BlackHoleStorage.ACTIVE_PORT_MENU.get(), containerId);
         this.player = playerInv.player;
+        this.access = ContainerLevelAccess.NULL;
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
         this.activePort = null;
@@ -96,9 +99,10 @@ public class ActivePortMenu extends AbstractContainerMenu {
         }
     }
 
-    public ActivePortMenu(int containerId, Player player, ActivePortBlockEntity activePort) {
+    public ActivePortMenu(int containerId, Player player, ActivePortBlockEntity activePort, ContainerLevelAccess access) {
         super(BlackHoleStorage.ACTIVE_PORT_MENU.get(), containerId);
         this.player = player;
+        this.access = access;
         this.owner = activePort.getOwner();
         this.locked = activePort.isLocked();
         this.activePort = activePort;
@@ -155,8 +159,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@NotNull Player pPlayer) {
-        return !activePort.isRemoved() &&
-                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
+        return !activePort.isRemoved() && AbstractContainerMenu.stillValid(access, pPlayer, BlackHoleStorage.ACTIVE_PORT.get());
     }
 
     @Override
@@ -187,7 +190,7 @@ public class ActivePortMenu extends AbstractContainerMenu {
 
     private void openChannelScreen() {
         if (locked) return;
-        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {});
+        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort, access), buf -> {});
     }
 
     public InfoPort getSelectedPort() {

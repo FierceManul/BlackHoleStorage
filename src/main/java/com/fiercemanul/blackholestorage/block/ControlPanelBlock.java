@@ -13,6 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -159,7 +160,7 @@ public class ControlPanelBlock extends Block implements SimpleWaterloggedBlock, 
                 }
 
                 if (controlPanelBlockEntity.getChannelInfo() == null)
-                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity), buf -> {
+                    NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlockEntity, ContainerLevelAccess.create(level, pos)), buf -> {
                     });
                 else {
                     NetworkHooks.openScreen((ServerPlayer) player, new ControlPanelMenuProvider(controlPanelBlockEntity), buf -> {

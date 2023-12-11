@@ -52,6 +52,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     protected final Player player;
     private final Level level;
     private final BlockPos blockPos;
+    private final ContainerLevelAccess access;
+    public ControlPanelBlockEntity controlPanelBlock;
     /**
      * 便携终端所在物品槽位
      */
@@ -83,6 +85,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         this.blockPos = extraData.readBlockPos();
         this.panelItemSlotIndex = extraData.readInt();
 
+        this.access = ContainerLevelAccess.NULL;
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
         this.craftingMode = extraData.readBoolean();
@@ -126,6 +129,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
         if (panelItemSlotIndex >= 0) {
             this.blockPos = BlockPos.ZERO;
+            this.access = ContainerLevelAccess.NULL;
             this.controlPanelBlock = null;
             this.panelItem = player.getInventory().getItem(panelItemSlotIndex);
             CompoundTag nbt = panelItem.getTag();
@@ -143,6 +147,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
         else {
             this.blockPos = blockEntity.getBlockPos();
+            this.access = ContainerLevelAccess.create(level, blockPos);
             this.controlPanelBlock = blockEntity;
             this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
             this.locked = blockEntity.isLocked();
@@ -1020,8 +1025,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             openChannelScreen();
         }
         if (panelItemSlotIndex >= 0) return panelItem == player.getInventory().getItem(panelItemSlotIndex);
-        else return !controlPanelBlock.isRemoved() &&
-                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
+        else return !controlPanelBlock.isRemoved() && AbstractContainerMenu.stillValid(access, player, BlackHoleStorage.CONTROL_PANEL.get());
     }
 
 
@@ -1056,10 +1060,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (locked) return;
         if (panelItemSlotIndex >= 0)
             NetworkHooks.openScreen((ServerPlayer) player,
-                                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex)), buf -> {
-                    });
-        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock), buf -> {
-        });
+                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex), ContainerLevelAccess.NULL), buf -> {});
+        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock, access), buf -> {});
     }
 
     @Override

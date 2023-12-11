@@ -11,6 +11,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -195,6 +196,12 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         @Override
         public void beforeRender() {
         }
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
+            this.defaultButtonNarrationText(pNarrationElementOutput);
+        }
     }
 
     private class ChannelButton extends ImageButton {
@@ -225,14 +232,14 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
             int[] a = filterChannels.get(buttonID + scrollAt);
             float vOffset = this.isHoveredOrFocused() ? 174.0F : 158.0F;
             if (a[0] == channelManager.selectedChannelType && a[1] == channelManager.selectedChannelID) vOffset += 32;
-            blit(pPoseStack, this.x, this.y, 0.0F, vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), 0.0F, vOffset, this.width, this.height, 256, 256);
             String channelName;
             switch (a[0]) {
                 case 0 -> channelName = "§a" + channelManager.myChannels.get(a[1]);
                 case 1 -> channelName = "§c" + channelManager.otherChannels.get(a[1]);
                 default -> channelName = channelManager.publicChannels.get(a[1]);
             }
-            font.draw(pPoseStack, channelName, this.x + 4.0F, this.y + 4.0F, 16777215);
+            font.draw(pPoseStack, channelName, this.getX() + 4.0F, this.getY() + 4.0F, 16777215);
         }
     }
 
@@ -253,11 +260,10 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 220.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 0, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 0, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
@@ -286,11 +292,10 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 218.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 34, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 34, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
@@ -327,11 +332,10 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 218.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 18, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 18, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
@@ -367,7 +371,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 218.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 50, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 50, this.width, this.height, 256, 256);
         }
     }
 }

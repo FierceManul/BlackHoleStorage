@@ -14,6 +14,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -217,10 +218,10 @@ public class PassivePortBlock extends BaseEntityBlock implements SimpleWaterlogg
                     passivePort.setLocked(false);
                 }
 
-                if (passivePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {
+                if (passivePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort, ContainerLevelAccess.create(level, pos)), buf -> {
                 });
                 else {
-                    NetworkHooks.openScreen((ServerPlayer) player, new PassivePortMenuProvider(passivePort), buf -> {
+                    NetworkHooks.openScreen((ServerPlayer) player, new PassivePortMenuProvider(passivePort, level, pos), buf -> {
                         buf.writeUUID(passivePort.getOwner());
                         buf.writeBoolean(passivePort.isLocked());
                         buf.writeBlockPos(pos);

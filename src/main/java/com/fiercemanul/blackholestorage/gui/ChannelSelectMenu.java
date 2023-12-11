@@ -9,28 +9,37 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
 public class ChannelSelectMenu extends AbstractContainerMenu {
 
     private final Player player;
+    private final ContainerLevelAccess access;
     public final IChannelTerminal terminal;
 
     public ChannelSelectMenu(int containerId, Inventory playerInv, FriendlyByteBuf extraData) {
         super(BlackHoleStorage.CHANNEL_SELECT_MENU.get(), containerId);
         this.player = playerInv.player;
+        this.access = ContainerLevelAccess.NULL;
         this.terminal = null;
     }
-    public ChannelSelectMenu(int containerId, Player player, IChannelTerminal terminal) {
+    public ChannelSelectMenu(int containerId, Player player, IChannelTerminal terminal, ContainerLevelAccess access) {
         super(BlackHoleStorage.CHANNEL_SELECT_MENU.get(), containerId);
         this.player = player;
+        this.access = access;
         this.terminal = terminal;
         ServerChannelManager.getInstance().addChannelSelector((ServerPlayer) player, terminal.getTerminalOwner());
         this.terminal.addChannelSelector((ServerPlayer) player);
     }
 
     @Override
-    public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
+    public @NotNull ItemStack quickMoveStack(Player pPlayer, int pIndex) {
         return ItemStack.EMPTY;
     }
 
@@ -70,7 +79,8 @@ public class ChannelSelectMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player pPlayer) {
-        return terminal.stillValid();
+        if (terminal.getBlock().equals(Blocks.AIR)) return terminal.stillValid();
+        return terminal.stillValid() && AbstractContainerMenu.stillValid(access, pPlayer, terminal.getBlock());
     }
 
     @Override

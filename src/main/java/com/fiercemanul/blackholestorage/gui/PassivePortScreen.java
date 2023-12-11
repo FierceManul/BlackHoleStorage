@@ -129,9 +129,9 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 219.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, id * 17, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, id * 17, this.width, this.height, 256, 256);
             if (passivePortBlockState.getValue(property))
-                blit(pPoseStack, this.x, this.y, 236, 0, this.width, this.height, 256, 256);
+                blit(pPoseStack, this.getX(), this.getY(), 236, 0, this.width, this.height, 256, 256);
         }
     }
 
@@ -159,11 +159,10 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 219.0F : 202.0F;
             float vOffset = menu.locked ? 119.0F : 102.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
@@ -200,11 +199,10 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 219.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 136.0F, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 136.0F, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, tips, pMouseX, pMouseY);
