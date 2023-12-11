@@ -12,6 +12,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -194,6 +195,11 @@ public class PassivePortBlockEntity extends BlockEntity implements IChannelTermi
     @Override
     public boolean stillValid() {
         return !isRemoved();
+    }
+
+    @Override
+    public Block getBlock() {
+        return BlackHoleStorage.PASSIVE_PORT.get();
     }
 
     @Override

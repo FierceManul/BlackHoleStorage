@@ -11,15 +11,14 @@ import com.fiercemanul.blackholestorage.item.PortableControlPanelItem;
 import com.fiercemanul.blackholestorage.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.event.CreativeModeTabEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
@@ -53,7 +52,7 @@ public class BlackHoleStorage {
     );
     public static final RegistryObject<Item>
             PASSIVE_PORT_ITEM = ITEMS.register(
-                    "passive_port", () -> new PassivePortBlockItem(PASSIVE_PORT.get(), new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
+                    "passive_port", () -> new PassivePortBlockItem(PASSIVE_PORT.get(), new Item.Properties()));
     public static final RegistryObject<Block>
             ACTIVE_PORT = BLOCKS.register("active_port", ActivePortBlock::new);
     public static final RegistryObject<BlockEntityType<ActivePortBlockEntity>>
@@ -62,7 +61,7 @@ public class BlackHoleStorage {
     );
     public static final RegistryObject<Item>
             ACTIVE_PORT_ITEM = ITEMS.register(
-                    "active_port", () -> new ActivePortBlockItem(ACTIVE_PORT.get(), new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
+                    "active_port", () -> new ActivePortBlockItem(ACTIVE_PORT.get(), new Item.Properties()));
     public static final RegistryObject<Block>
             CONTROL_PANEL = BLOCKS.register("control_panel", ControlPanelBlock::new);
     public static final RegistryObject<BlockEntityType<ControlPanelBlockEntity>>
@@ -71,17 +70,17 @@ public class BlackHoleStorage {
     );
     public static final RegistryObject<Item>
             CONTROL_PANEL_ITEM = ITEMS.register(
-                    "control_panel", () -> new BlockItem(CONTROL_PANEL.get(), new Item.Properties().fireResistant().rarity(Rarity.EPIC).tab(CreativeModeTab.TAB_MISC)));
+                    "control_panel", () -> new BlockItem(CONTROL_PANEL.get(), new Item.Properties().fireResistant().rarity(Rarity.EPIC)));
 
     public static final RegistryObject<Item>
             PORTABLE_CONTROL_PANEL_ITEM = ITEMS.register(
-                    "portable_control_panel", () -> new PortableControlPanelItem(new Item.Properties().tab(CreativeModeTab.TAB_MISC))
+                    "portable_control_panel", () -> new PortableControlPanelItem(new Item.Properties())
     );
     public static final RegistryObject<Item>
-            CORE = ITEMS.register("core", () -> new Item(new Item.Properties().fireResistant().rarity(Rarity.EPIC).tab(CreativeModeTab.TAB_MISC))
+            CORE = ITEMS.register("core", () -> new Item(new Item.Properties().fireResistant().rarity(Rarity.EPIC))
     );
     public static final RegistryObject<Item>
-            STORAGE_CORE = ITEMS.register("storage_core", () -> new Item(new Item.Properties().fireResistant().rarity(Rarity.EPIC).tab(CreativeModeTab.TAB_MISC))
+            STORAGE_CORE = ITEMS.register("storage_core", () -> new Item(new Item.Properties().fireResistant().rarity(Rarity.EPIC))
     );
     public static final RegistryObject<Item>
             FORGE_ENERGY = ITEMS.register("forge_energy", () -> new Item(new Item.Properties())
@@ -105,9 +104,21 @@ public class BlackHoleStorage {
         ITEMS.register(modEventBus);
         MENU_TYPE.register(modEventBus);
 
-        MinecraftForge.EVENT_BUS.register(this);
+        //MinecraftForge.EVENT_BUS.register(this);
+        modEventBus.addListener(this::putItems);
 
         NetworkHandler.init();
         Config.register();
+    }
+
+    public void putItems(CreativeModeTabEvent.BuildContents contents) {
+        if (contents.getTab() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            contents.accept(PASSIVE_PORT_ITEM);
+            contents.accept(ACTIVE_PORT_ITEM);
+            contents.accept(CONTROL_PANEL_ITEM);
+            contents.accept(PORTABLE_CONTROL_PANEL_ITEM);
+            contents.accept(STORAGE_CORE);
+            contents.accept(CORE);
+        }
     }
 }

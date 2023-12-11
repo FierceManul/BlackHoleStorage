@@ -11,6 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,6 +96,11 @@ public class ItemChannelTerminal implements IChannelTerminal {
     @Override
     public boolean stillValid() {
         return terminal == inventory.getItem(slotID);
+    }
+
+    @Override
+    public Block getBlock() {
+        return Blocks.AIR;
     }
 
     @Override

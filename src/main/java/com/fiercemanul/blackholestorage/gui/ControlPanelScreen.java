@@ -15,6 +15,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -474,6 +475,12 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
                 this.lastObjectListSize = menu.dummyContainer.sortedObject.size();
             }
         }
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
+            this.defaultButtonNarrationText(pNarrationElementOutput);
+        }
     }
 
     private class ToggleCraftingButton extends ImageButton {
@@ -490,7 +497,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.enableDepthTest();
             int uOffset = menu.craftingMode ? 96 : 80;
             int vOffset = this.isHoveredOrFocused() ? 207 : 199;
-            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
     }
 
@@ -515,11 +522,10 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.enableDepthTest();
             float uOffset = menu.locked ? 86.0F : 67.0F;
             float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
@@ -542,10 +548,9 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.enableDepthTest();
             int uOffset = this.isHoveredOrFocused() ? 221 : 202;
             int vOffset = menu.sortType * 16;
-            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             List<FormattedCharSequence> list = new ArrayList<>();
@@ -573,7 +578,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.enableDepthTest();
             int uOffset = 105 + 19 * menu.viewType;
             int vOffset = this.isHoveredOrFocused() ? 231 : 215;
-            blit(pPoseStack, this.x, this.y, (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
     }
 
@@ -604,11 +609,10 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
-            blit(pPoseStack, this.x, this.y, 48.0F, vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), 48.0F, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, tips, pMouseX, pMouseY);
@@ -627,7 +631,6 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);
@@ -646,7 +649,6 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);
@@ -665,7 +667,6 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);

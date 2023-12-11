@@ -6,11 +6,9 @@ package com.fiercemanul.blackholestorage.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -19,6 +17,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.fluids.FluidStack;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 @OnlyIn(Dist.CLIENT)
@@ -43,16 +42,25 @@ public final class FluidItemRender {
 
     public static FluidItemRender sprite(TextureAtlasSprite sprite) {
         // We use this convoluted method to convert from UV in the range of [0,1] back to pixel values with a
-        // fictitious reference size of a large integer. This is converted back to UV later when we actually blit.
-        final int refSize = Integer.MAX_VALUE / 2; // Don't use max int to prevent overflows after inexact conversions.
-        TextureAtlas atlas = sprite.atlas();
+        // fictitious reference size of Integer.MAX_VALUE. This is converted back to UV later when we actually blit.
+        final int refSize = Integer.MAX_VALUE;
+        return new FluidItemRender(sprite.atlasLocation(), refSize, refSize)
+                .src(
+                        (int) (sprite.getU0() * refSize),
+                        (int) (sprite.getV0() * refSize),
+                        (int) ((sprite.getU1() - sprite.getU0()) * refSize),
+                        (int) ((sprite.getV1() - sprite.getV0()) * refSize)
+                );
+    }
 
-        return new FluidItemRender(atlas.location(), refSize, refSize).src(
-                (int) (sprite.getU0() * refSize),
-                (int) (sprite.getV0() * refSize),
-                (int) ((sprite.getU1() - sprite.getU0()) * refSize),
-                (int) ((sprite.getV1() - sprite.getV0()) * refSize)
-        );
+    public static void renderFluid(FluidStack fluidStack, PoseStack poseStack, int x, int y, int z) {
+        IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(fluidStack.getFluid());
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(attributes.getStillTexture(fluidStack));
+        sprite(sprite)
+                .colorRgb(attributes.getTintColor(fluidStack))
+                .blending(false)
+                .dest(x, y, 16, 16)
+                .blit(poseStack, z);
     }
 
     /**
@@ -112,7 +120,8 @@ public final class FluidItemRender {
         if (srcRect == null) {
             minU = minV = 0;
             maxU = maxV = 1;
-        } else {
+        }
+        else {
             minU = srcRect.getX() / (float) referenceWidth;
             minV = srcRect.getY() / (float) referenceHeight;
             maxU = (srcRect.getX() + srcRect.getWidth()) / (float) referenceWidth;
@@ -127,7 +136,8 @@ public final class FluidItemRender {
         if (destRect.getWidth() != 0 && destRect.getHeight() != 0) {
             x2 += destRect.getWidth();
             y2 += destRect.getHeight();
-        } else if (srcRect != null) {
+        }
+        else if (srcRect != null) {
             x2 += srcRect.getWidth();
             y2 += srcRect.getHeight();
         }
@@ -144,21 +154,12 @@ public final class FluidItemRender {
         if (blending) {
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        } else {
+        }
+        else {
             RenderSystem.disableBlend();
         }
         RenderSystem.enableTexture();
         BufferUploader.drawWithShader(bufferbuilder.end());
-    }
-
-    public static void renderFluid(FluidStack fluidStack, PoseStack poseStack, int x, int y, int z) {
-        IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(fluidStack.getFluid());
-        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(attributes.getStillTexture(fluidStack));
-        sprite(sprite)
-                .colorRgb(attributes.getTintColor(fluidStack))
-                .blending(false)
-                .dest(x, y, 16, 16)
-                .blit(poseStack, z);
     }
 
 }

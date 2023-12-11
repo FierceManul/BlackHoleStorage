@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -22,6 +23,7 @@ public class PassivePortMenu extends AbstractContainerMenu {
     protected final Player player;
     protected final UUID owner;
     protected boolean locked;
+    private final ContainerLevelAccess access;
     public final PassivePortBlockEntity passivePort;
     public final BlockPos blockPos;
     public final UUID channelOwner;
@@ -32,16 +34,18 @@ public class PassivePortMenu extends AbstractContainerMenu {
         this.player = playerInv.player;
         this.owner = extraData.readUUID();
         this.locked = extraData.readBoolean();
+        this.access = ContainerLevelAccess.NULL;
         this.passivePort = null;
         this.blockPos = extraData.readBlockPos();
         this.channelOwner = extraData.readUUID();
         this.channelName = extraData.readUtf();
     }
-    public PassivePortMenu(int containerId, Player player, PassivePortBlockEntity passivePort) {
+    public PassivePortMenu(int containerId, Player player, PassivePortBlockEntity passivePort, ContainerLevelAccess access) {
         super(BlackHoleStorage.PASSIVE_PORT_MENU.get(), containerId);
         this.player = player;
         this.owner = passivePort.getOwner();
         this.locked = passivePort.isLocked();
+        this.access = access;
         this.passivePort = passivePort;
         this.blockPos = passivePort.getBlockPos();
         this.channelOwner = passivePort.getChannelInfo().owner();
@@ -83,13 +87,12 @@ public class PassivePortMenu extends AbstractContainerMenu {
 
     private void openChannelScreen() {
         if (locked) return;
-        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort), buf -> {});
+        NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(passivePort, access), buf -> {});
     }
 
     @Override
     public boolean stillValid(@NotNull Player pPlayer) {
-        return !passivePort.isRemoved() &&
-                player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
+        return !passivePort.isRemoved() && AbstractContainerMenu.stillValid(access, pPlayer, BlackHoleStorage.PASSIVE_PORT.get());
     }
 
     @Override

@@ -12,6 +12,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -172,7 +173,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                     activePort.setLocked(false);
                 }
 
-                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort), buf -> {
+                if (activePort.getChannelInfo() == null) NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(activePort, ContainerLevelAccess.create(level, pPos)), buf -> {
                 });
                 else {
                     Vec3 vec3 = pHit.getLocation().subtract(pPos.getX(), pPos.getY(), pPos.getZ());
@@ -184,7 +185,7 @@ public class ActivePortBlock extends BaseEntityBlock implements SimpleWaterlogge
                         //else if (vec3.y <= 0.125) direction = Direction.DOWN;
                     else if (vec3.y >= 0.875) direction = Direction.UP;
                     else direction = Direction.DOWN;
-                    NetworkHooks.openScreen((ServerPlayer) player, new ActivePortMenuProvider(activePort), buf -> {
+                    NetworkHooks.openScreen((ServerPlayer) player, new ActivePortMenuProvider(activePort, level, pPos), buf -> {
                         buf.writeUUID(activePort.getOwner());
                         buf.writeBoolean(activePort.isLocked());
                         buf.writeBlockPos(pPos);

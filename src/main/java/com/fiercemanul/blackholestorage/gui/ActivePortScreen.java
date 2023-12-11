@@ -228,13 +228,12 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = menu.getSelectedPort() == port ? 219.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 0.0F, this.width, this.height, 256, 256);
-            blit(pPoseStack, this.x, this.y, tx, ty, this.width, this.height, 256, 256);
-            if (port.enable) blit(pPoseStack, this.x, this.y, 236, 0, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 0.0F, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), tx, ty, this.width, this.height, 256, 256);
+            if (port.enable) blit(pPoseStack, this.getX(), this.getY(), 236, 0, this.width, this.height, 256, 256);
             if (isHovered) renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             if (port == menu.getSelectedPort()) {
@@ -273,12 +272,11 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = menu.isPortInput() == input ? 219.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 0.0F, this.width, this.height, 256, 256);
-            blit(pPoseStack, this.x, this.y, tx, ty, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 0.0F, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), tx, ty, this.width, this.height, 256, 256);
             if (isHovered) renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, component, pMouseX, pMouseY);
@@ -298,7 +296,6 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             if (isHovered) renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, Component.translatable("bhs.GUI.rate.tip"), pMouseX, pMouseY);
@@ -329,11 +326,10 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 221.0F : 202.0F;
             float vOffset = menu.locked ? 117.0F : 101.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, vOffset, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             if (menu.owner.equals(menu.player.getUUID())) renderTooltip(pPoseStack, componentA, pMouseX, pMouseY);
@@ -370,11 +366,10 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = this.isHoveredOrFocused() ? 221.0F : 202.0F;
-            blit(pPoseStack, this.x, this.y, uOffset, 85.0F, this.width, this.height, 256, 256);
+            blit(pPoseStack, this.getX(), this.getY(), uOffset, 85.0F, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, tips, pMouseX, pMouseY);
@@ -523,12 +518,11 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
                 this.rule = menu.getRule(id);
                 setString();
             }
-            if (!fluidStack.equals(FluidStack.EMPTY)) FluidItemRender.renderFluid(fluidStack, pPoseStack, x - 19, y + 3, 0);
-            font.draw(pPoseStack, stringTemp, x + 1, y + 2, 14737632);
+            if (!fluidStack.equals(FluidStack.EMPTY)) FluidItemRender.renderFluid(fluidStack, pPoseStack, getX() - 19, getY() + 3, 0);
+            font.draw(pPoseStack, stringTemp, getX() + 1, getY() + 2, 14737632);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, tip, pMouseX, pMouseY);
@@ -536,7 +530,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void updateNarration(NarrationElementOutput pNarrationElementOutput) {
+        public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
             this.defaultButtonNarrationText(pNarrationElementOutput);
         }
     }
@@ -600,10 +594,9 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
                 rule = thisRule;
                 setString();
             }
-            font.draw(pPoseStack, stringTemp, x + 1, y + 2, 14737632);
+            font.draw(pPoseStack, stringTemp, getX() + 1, getY() + 2, 14737632);
         }
 
-        @Override
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, menu.choosingRules.rulesTooltip, pMouseX, pMouseY);
@@ -611,7 +604,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void updateNarration(NarrationElementOutput pNarrationElementOutput) {
+        public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
             this.defaultButtonNarrationText(pNarrationElementOutput);
         }
     }
@@ -630,7 +623,12 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         }
 
         @Override
-        public void beforeRender() {
+        public void beforeRender() {}
+
+        @Override
+        @ParametersAreNonnullByDefault
+        public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
+            this.defaultButtonNarrationText(pNarrationElementOutput);
         }
     }
 }

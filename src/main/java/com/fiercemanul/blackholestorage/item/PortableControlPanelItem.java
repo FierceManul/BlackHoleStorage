@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -72,7 +73,7 @@ public class PortableControlPanelItem extends Item {
                     buf.writeInt(nbt.getCompound("channel").getInt("channelID"));
                 });
             } else {
-                NetworkHooks.openScreen((ServerPlayer) pPlayer, new ChannelSelectMenuProvider(new ItemChannelTerminal(pPlayer.getInventory(), panel, slotIndex)), buf -> {});
+                NetworkHooks.openScreen((ServerPlayer) pPlayer, new ChannelSelectMenuProvider(new ItemChannelTerminal(pPlayer.getInventory(), panel, slotIndex), ContainerLevelAccess.NULL), buf -> {});
             }
         }
         return InteractionResultHolder.pass(pPlayer.getItemInHand(pUsedHand));

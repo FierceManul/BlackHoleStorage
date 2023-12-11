@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -189,6 +190,11 @@ public class ActivePortBlockEntity extends BlockEntity implements IChannelTermin
     @Override
     public boolean stillValid() {
         return !isRemoved();
+    }
+
+    @Override
+    public Block getBlock() {
+        return BlackHoleStorage.ACTIVE_PORT.get();
     }
 
     @Override

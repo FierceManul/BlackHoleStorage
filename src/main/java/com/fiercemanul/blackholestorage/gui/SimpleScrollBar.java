@@ -40,8 +40,8 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     }
 
     public void setPos(int x, int y) {
-        this.x = x;
-        this.y = y;
+        this.setX(x);
+        this.setY(y);
     }
 
     public void setSize(int weight, int height) {
@@ -99,12 +99,12 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     }
 
     public void onDragTo(double mouseY) {
-        if (mouseY <= y) {
+        if (mouseY <= getY()) {
             scrolledOn = 0.0D;
-        } else if (mouseY >= y + getHeight()) {
+        } else if (mouseY >= getY() + getHeight()) {
             scrolledOn = 1.0D;
         } else {
-            double v = (mouseY - y - (scrollTagSize / 2)) / (getHeight() - scrollTagSize);
+            double v = (mouseY - getY() - (scrollTagSize / 2)) / (getHeight() - scrollTagSize);
             setScrolledOn(v);
         }
         this.draggedTo(scrolledOn);
@@ -119,14 +119,14 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     public void render(PoseStack poseStack, int pMouseX, int pMouseY, float pPartialTick) {
         this.beforeRender();
         if (!this.visible) return;
-        fill(poseStack, x, y, x + width, y + height, scrollBarBackgroundColor);
-        double v = y + ((getHeight() - scrollTagSize) * scrolledOn);
-        fill(poseStack, x, (int) Math.floor(v), x + width, (int) Math.ceil(v + scrollTagSize), scrollBarTagColor);
+        fill(poseStack, getX(), getY(), getX() + width, getY() + height, scrollBarBackgroundColor);
+        double v = getY() + ((getHeight() - scrollTagSize) * scrolledOn);
+        fill(poseStack, getX(), (int) Math.floor(v), getX() + width, (int) Math.ceil(v + scrollTagSize), scrollBarTagColor);
     }
 
     @Override
     @ParametersAreNonnullByDefault
-    public void updateNarration(NarrationElementOutput pNarrationElementOutput) {
+    public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
         this.defaultButtonNarrationText(pNarrationElementOutput);
     }
 }

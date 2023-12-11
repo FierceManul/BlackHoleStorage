@@ -28,7 +28,7 @@ public class ClientModEvents {
     }
 
     @SubscribeEvent
-    public static void onBakeModel(ModelEvent.BakingCompleted event) {
+    public static void onBakeModel(ModelEvent.ModifyBakingResult event) {
         ModelResourceLocation location = new ModelResourceLocation(MODID, "passive_port", "inventory");
         event.getModels().put(location, new BlackHoleModel(event.getModels().get(location)));
         location = new ModelResourceLocation(MODID, "active_port", "inventory");

@@ -12,6 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -199,6 +200,11 @@ public class ControlPanelBlockEntity extends BlockEntity implements IChannelTerm
     @Override
     public boolean stillValid() {
         return !isRemoved();
+    }
+
+    @Override
+    public Block getBlock() {
+        return BlackHoleStorage.CONTROL_PANEL.get();
     }
 
     @Override
