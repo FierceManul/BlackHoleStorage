@@ -158,7 +158,6 @@ public final class FluidItemRender {
         else {
             RenderSystem.disableBlend();
         }
-        RenderSystem.enableTexture();
         BufferUploader.drawWithShader(bufferbuilder.end());
     }
 

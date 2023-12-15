@@ -165,18 +165,16 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
         for (int i = 0; i < menu.dummyContainer.formatCount.size(); i++) {
             Slot slot = menu.slots.get(i + 51);
             String count = menu.dummyContainer.formatCount.get(i);
-            this.setBlitOffset(100);
             RenderSystem.enableDepthTest();
             float fontSize = 0.5F;
             poseStack.pushPose();
-            poseStack.translate(leftPos + slot.x, topPos + slot.y, 300.0D);
+            poseStack.translate(leftPos + slot.x, topPos + slot.y, 400.0D);
             poseStack.scale(fontSize, fontSize, 1.0F);
             this.font.draw(poseStack, count,
                     (16 - this.font.width(count) * fontSize) / fontSize,
                     (16 - this.font.lineHeight * fontSize) / fontSize,
                     16777215);
             poseStack.popPose();
-            this.setBlitOffset(0);
         }
     }
 
@@ -287,7 +285,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
-                shortSearchBox.setFocus(true);
+                shortSearchBox.setFocused(true);
                 shortSearchBox.setEditable(true);
             }
             //长搜索框
@@ -296,7 +294,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
                 shortSearchBox.setValue("");
                 longSearchBox.setValue("");
                 menu.dummyContainer.refreshContainer(true);
-                longSearchBox.setFocus(true);
+                longSearchBox.setFocused(true);
                 longSearchBox.setEditable(true);
             }
             else if (craftToChannelButton.isMouseOver(pMouseX, pMouseY)) {
@@ -395,7 +393,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
     private void toggleLock() {
         if (menu.owner.equals(menu.player.getUUID()) || menu.owner.equals(BlackHoleStorage.FAKE_PLAYER_UUID)) {
             this.menu.locked = !this.menu.locked;
-            this.shortSearchBox.setFocus(false);
+            this.shortSearchBox.setFocused(false);
             NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelFilterPack(menu.containerId, menu.filter));
             this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
         }
@@ -404,9 +402,9 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
     protected void toggleCraftingMode() {
         this.menu.craftingMode = !this.menu.craftingMode;
         this.menu.dummyContainer.refreshContainer(true);
-        this.shortSearchBox.setFocus(false);
+        this.shortSearchBox.setFocused(false);
         this.shortSearchBox.setVisible(menu.craftingMode);
-        this.longSearchBox.setFocus(false);
+        this.longSearchBox.setFocused(false);
         this.longSearchBox.setVisible(!menu.craftingMode);
         this.craftToChannelButton.active = menu.craftingMode;
         this.craftToChannelButton.visible = menu.craftingMode;
@@ -491,7 +489,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -516,7 +514,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -542,7 +540,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -572,7 +570,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -604,7 +602,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();

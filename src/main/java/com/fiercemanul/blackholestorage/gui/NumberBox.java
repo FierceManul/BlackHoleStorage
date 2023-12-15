@@ -41,7 +41,7 @@ class NumberBox extends EditBox {
     public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
         if (visible && isHovered && pButton == 1) {
             setValue("");
-            setFocus(true);
+            setFocused(true);
             setEditable(true);
             return true;
         } else return super.mouseClicked(pMouseX, pMouseY, pButton);

@@ -14,6 +14,7 @@ import com.fiercemanul.blackholestorage.util.InvItemCounter;
 import com.fiercemanul.blackholestorage.util.Tools;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -1072,14 +1073,14 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (level.isClientSide) return;
         if (lastCraftingRecipe != null && lastCraftingRecipe.matches(craftSlots, level)) {
             resultSlots.setRecipeUsed(level, (ServerPlayer) player, lastCraftingRecipe);
-            resultSlots.setItem(0, lastCraftingRecipe.assemble(craftSlots));
+            resultSlots.setItem(0, lastCraftingRecipe.assemble(craftSlots, RegistryAccess.EMPTY));
             return;
         }
         Optional<CraftingRecipe> optional = level.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, craftSlots, level);
         if (optional.isPresent()) {
             CraftingRecipe recipe = optional.get();
             if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, recipe)) {
-                resultSlots.setItem(0, recipe.assemble(craftSlots));
+                resultSlots.setItem(0, recipe.assemble(craftSlots, RegistryAccess.EMPTY));
             }
         }
         else resultSlots.setItem(0, ItemStack.EMPTY);
@@ -1267,7 +1268,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (craftingRecipe.matches(craftSlots, level)) {
                     if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, craftingRecipe)) {
                         lastCraftingRecipe = craftingRecipe;
-                        resultSlots.setItem(0, craftingRecipe.assemble(craftSlots));
+                        resultSlots.setItem(0, craftingRecipe.assemble(craftSlots, RegistryAccess.EMPTY));
                     }
                 }
             }

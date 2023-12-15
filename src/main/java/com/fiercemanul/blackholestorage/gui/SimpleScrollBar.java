@@ -13,6 +13,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @OnlyIn(Dist.CLIENT)
+@ParametersAreNonnullByDefault
 public abstract class SimpleScrollBar extends AbstractWidget {
 
     private boolean scrolling = false;
@@ -116,7 +117,6 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     abstract public void beforeRender();
 
     @Override
-    @ParametersAreNonnullByDefault
     public void render(PoseStack poseStack, int pMouseX, int pMouseY, float pPartialTick) {
         this.beforeRender();
         if (!this.visible) return;
@@ -126,7 +126,11 @@ public abstract class SimpleScrollBar extends AbstractWidget {
     }
 
     @Override
-    @ParametersAreNonnullByDefault
+    public void renderWidget(PoseStack poseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        //render(poseStack, pMouseX, pMouseY, pPartialTick);
+    }
+
+    @Override
     public void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
         this.defaultButtonNarrationText(pNarrationElementOutput);
     }

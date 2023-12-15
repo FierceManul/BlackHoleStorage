@@ -16,6 +16,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -80,11 +81,12 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
         MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
         this.itemRenderer.renderStatic(
                 passivePortItem,
-                ItemTransforms.TransformType.GUI,
+                ItemDisplayContext.GUI,
                 15728880,
                 OverlayTexture.NO_OVERLAY,
                 new PoseStack(),
                 multibuffersource$buffersource,
+                menu.player.level,
                 0);
         poseStack.popPose();
         multibuffersource$buffersource.endBatch();
@@ -124,7 +126,7 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -153,7 +155,7 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -194,7 +196,7 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();

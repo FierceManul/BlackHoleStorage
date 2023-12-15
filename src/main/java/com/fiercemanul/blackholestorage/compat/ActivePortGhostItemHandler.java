@@ -14,11 +14,6 @@ import java.util.List;
 public class ActivePortGhostItemHandler implements IGhostIngredientHandler<ActivePortScreen> {
 
     @Override
-    public <I> @NotNull List<Target<I>> getTargets(ActivePortScreen gui, I ingredient, boolean doStart) {
-        return new LinkedList<>();
-    }
-
-    @Override
     public <I> @NotNull List<Target<I>> getTargetsTyped(ActivePortScreen gui, ITypedIngredient<I> ingredient, boolean doStart) {
         List<Target<I>> targets = new LinkedList<>();
         if (!gui.getMenu().checkedSlotActive()) return targets;

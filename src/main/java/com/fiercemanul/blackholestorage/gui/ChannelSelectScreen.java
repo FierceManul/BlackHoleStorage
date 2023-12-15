@@ -126,13 +126,13 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
         if (pButton == 1) {
             if (searchBox.isMouseOver(pMouseX, pMouseY)) {
                 searchBox.setValue("");
-                searchBox.setFocus(true);
+                searchBox.setFocused(true);
                 searchBox.setEditable(true);
                 updateChannelList();
             }
             if (nameBox.isMouseOver(pMouseX, pMouseY)) {
                 nameBox.setValue("");
-                nameBox.setFocus(true);
+                nameBox.setFocused(true);
                 nameBox.setEditable(true);
             }
         }
@@ -225,7 +225,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -255,7 +255,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -287,7 +287,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -327,7 +327,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -366,7 +366,7 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();

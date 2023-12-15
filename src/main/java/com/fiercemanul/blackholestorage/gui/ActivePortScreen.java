@@ -223,7 +223,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -267,7 +267,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -291,8 +291,8 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
-            super.renderButton(pPoseStack, pMouseX, pMouseY, pPartialTick);
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+            super.renderWidget(pPoseStack, pMouseX, pMouseY, pPartialTick);
             if (isHovered) renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
 
@@ -320,7 +320,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -361,7 +361,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
@@ -513,7 +513,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             if (rule != menu.getRule(id)) {
                 this.rule = menu.getRule(id);
                 setString();
@@ -574,7 +574,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
 
         @Override
         @ParametersAreNonnullByDefault
-        public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
+        public void renderWidget(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
             InfoRule thisRule = menu.choosingRules.getChoosingRule();
             if (rule != thisRule) {
                 RuleType lastRuleType = rule.ruleType;

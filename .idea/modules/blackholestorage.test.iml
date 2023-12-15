@@ -14,9 +14,9 @@
   </component>
   <component name="McpModuleSettings">
     <option name="mappingFile" value="D:\black hole storage\build\createMcpToSrg\output.tsrg" />
-    <option name="mcpVersion" value="parchment_2023.06.25-1.19.3" />
-    <option name="minecraftVersion" value="1.19.3" />
-    <option name="platformVersion" value="44.1.0" />
+    <option name="mcpVersion" value="parchment_2023.06.26-1.19.4" />
+    <option name="minecraftVersion" value="1.19.4" />
+    <option name="platformVersion" value="45.2.0" />
     <option name="srgType" value="TSRG" />
   </component>
 </module>
