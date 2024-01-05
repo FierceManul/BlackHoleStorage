@@ -48,10 +48,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ControlPanelMenu extends AbstractContainerMenu {
 
+    public final Channel channel;
+    public final UUID owner;
     protected final Player player;
     private final Level level;
     private final BlockPos blockPos;
-    public ControlPanelBlockEntity controlPanelBlock;
     /**
      * 便携终端所在物品槽位
      */
@@ -59,9 +60,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     private final ItemStack panelItem;
     private final CraftingContainer craftSlots = new CraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
-    public final Channel channel;
+    public ControlPanelBlockEntity controlPanelBlock;
     public DummyContainer dummyContainer;
-    public final UUID owner;
     public boolean locked;
     public UUID channelOwner;
     public int channelID;
@@ -70,7 +70,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
     public byte sortType;
     public byte viewType;
     public boolean LShifting = false;
-    public Runnable craftModeSetter = () -> {};
+    public Runnable craftModeSetter = () -> {
+    };
     private CraftingRecipe lastCraftingRecipe = null;
 
 
@@ -140,7 +141,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 this.channelOwner = channel.getUUID("channelOwner");
                 this.channelID = channel.getInt("channelID");
             }
-        } else {
+        }
+        else {
             this.blockPos = blockEntity.getBlockPos();
             this.controlPanelBlock = blockEntity;
             this.owner = blockEntity.getOwner() == null ? player.getUUID() : blockEntity.getOwner();
@@ -178,7 +180,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                             nbt.putInt("sortType", sortType);
                         }
                         panelItem.setTag(nbt);
-                    } else {
+                    }
+                    else {
                         controlPanelBlock.setLocked(locked);
                         if (locked) saveBlock();
                     }
@@ -223,20 +226,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
     }
 
-    private static final class Action {
-        public static final int LEFT_CLICK_DUMMY_SLOT = 0;
-        public static final int Right_CLICK_DUMMY_SLOT = 1;
-        public static final int LEFT_SHIFT_DUMMY_SLOT = 2;
-        public static final int Right_SHIFT_DUMMY_SLOT = 3;
-        public static final int THROW_ONE = 4;
-        public static final int THROW_STICK = 5;
-        public static final int LEFT_DRAG = 6;
-        public static final int RIGHT_DRAG = 7;
-        public static final int CLONE = 8;
-        public static final int DRAG_CLONE = 9;
-    }
-
-
     public void onLeftClickDummySlot(String type, String id) {
         ItemStack carried = getCarried();
         if (carried.isEmpty()) {
@@ -252,7 +241,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 channel.takeItem("minecraft:bucket", 1);
                 setCarried(fluidBucket);
             }
-        } else {
+        }
+        else {
             //叠堆大于1不处理特殊操作，防止意外。
             if (carried.getCount() > 1) {
                 channel.addItem(carried);
@@ -267,7 +257,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (fluidBucket.isEmpty()) return;
                 channel.takeFluid(id, FluidType.BUCKET_VOLUME);
                 setCarried(fluidBucket);
-            } else {
+            }
+            else {
                 if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) {
                     channel.addItem(carried);
                     return;
@@ -286,7 +277,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                         for (int i = 0; i < tanks; i++) {
                             int finalI = i;
                             testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
-                                    testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                                                                                           testFluid.set(testFluidHandlerItem.getFluidInTank(
+                                                                                                                   finalI)));
                             if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
                                 succeedInput = false;
                                 setCarried(getCarried().copy());
@@ -355,7 +347,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 channel.takeItem("minecraft:bucket", 1);
                 setCarried(fluidBucket);
             }
-        } else {
+        }
+        else {
             if (carried.getCount() > 1) {
                 channel.fillItemStack(carried, -1);
                 return;
@@ -382,7 +375,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                             for (int i = 0; i < tanks; i++) {
                                 int finalI = i;
                                 testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
-                                        testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                                                                                               testFluid.set(
+                                                                                                                       testFluidHandlerItem.getFluidInTank(
+                                                                                                                               finalI)));
                                 if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
                                     setCarried(getCarried().copy());
                                     return;
@@ -437,7 +432,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     itemStack.setCount(i);
                     channel.removeItem(itemStack);
                 }
-            } else if (type.equals("fluid")) {
+            }
+            else if (type.equals("fluid")) {
                 if (!channel.storageFluids.containsKey(id)) return;
                 if (channel.storageFluids.get(id) < FluidType.BUCKET_VOLUME || !channel.storageItems.containsKey("minecraft:bucket")) return;
                 FluidStack fluidStack = new FluidStack(Tools.getFluid(id), 1);
@@ -450,7 +446,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     channel.takeItem("minecraft:bucket", 1);
                 }
             }
-        } else {
+        }
+        else {
             if (carried.getCount() > 1) {
                 channel.fillItemStack(carried, -1);
                 return;
@@ -462,7 +459,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (fluidBucket.isEmpty()) return;
                 channel.takeFluid(id, FluidType.BUCKET_VOLUME);
                 setCarried(fluidBucket);
-            } else {
+            }
+            else {
                 if (Config.INCOMPATIBLE_MODID.get().contains(ForgeRegistries.ITEMS.getKey(carried.getItem()).getNamespace())) return;
                 AtomicBoolean canal = new AtomicBoolean(false);
                 //取一大堆，下限堆大小为64k桶，上限为存量的一半，防止败家行为。
@@ -488,7 +486,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                                 for (int k = 0; k < tanks; k++) {
                                     int finalI = k;
                                     testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
-                                            testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                                                                                                   testFluid.set(
+                                                                                                                           testFluidHandlerItem.getFluidInTank(
+                                                                                                                                   finalI)));
                                     if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(i))) {
                                         filledAmount = 0;
                                         setCarried(getCarried().copy());
@@ -566,7 +566,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (craftingMode) moveItemStackTo(itemStack, 41, 50, false);
                 else moveItemStackTo(itemStack, 0, 36, false);
                 if (itemStack.isEmpty()) channel.takeItem(id, 1);
-            } else if (type.equals("fluid")) {
+            }
+            else if (type.equals("fluid")) {
                 if (!channel.storageFluids.containsKey(id)) return;
                 if (channel.storageFluids.get(id) < FluidType.BUCKET_VOLUME || !channel.storageItems.containsKey("minecraft:bucket")) return;
                 FluidStack fluidStack = new FluidStack(Tools.getFluid(id), 1);
@@ -579,7 +580,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     channel.takeItem("minecraft:bucket", 1);
                 }
             }
-        } else {
+        }
+        else {
             if (carried.getCount() > 1) {
                 channel.fillItemStack(carried, -1);
                 return;
@@ -610,7 +612,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                                 for (int j = 0; j < tanks; j++) {
                                     int finalI = j;
                                     testItem.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).ifPresent(testFluidHandlerItem ->
-                                            testFluid.set(testFluidHandlerItem.getFluidInTank(finalI)));
+                                                                                                                   testFluid.set(
+                                                                                                                           testFluidHandlerItem.getFluidInTank(
+                                                                                                                                   finalI)));
                                     if (!testFluid.get().isFluidStackIdentical(iFluidHandlerItem.getFluidInTank(j))) {
                                         setCarried(getCarried().copy());
                                         return;
@@ -669,7 +673,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (!channel.storageItems.containsKey(id)) return;
             ItemStack itemStack = channel.takeItem(id, 1);
             player.drop(itemStack, false);
-        } else if (type.equals("fluid")) {
+        }
+        else if (type.equals("fluid")) {
             //笑死，对于流体这种空槽根本不触发扔事件。
             if (!channel.storageFluids.containsKey(id)) return;
             if (channel.storageFluids.get(id) < FluidType.BUCKET_VOLUME || !channel.storageItems.containsKey("minecraft:bucket")) return;
@@ -688,7 +693,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (!channel.storageItems.containsKey(id)) return;
             ItemStack itemStack = channel.saveTakeItem(id, false);
             player.drop(itemStack, false);
-        } else if (type.equals("fluid")) {
+        }
+        else if (type.equals("fluid")) {
             if (!channel.storageFluids.containsKey(id)) return;
             if (channel.storageFluids.get(id) < FluidType.BUCKET_VOLUME || !channel.storageItems.containsKey("minecraft:bucket")) return;
             FluidStack fluidStack = new FluidStack(Tools.getFluid(id), 1);
@@ -782,15 +788,18 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 super.set(itemStack);
                 player.onEquipItem(equipmentslot, itemstack, itemStack);
             }
+
             @Override
             public int getMaxStackSize() {
                 return 1;
             }
+
             @Override
             @ParametersAreNonnullByDefault
             public boolean mayPlace(ItemStack itemStack) {
                 return itemStack.canEquip(equipmentslot, player);
             }
+
             @Override
             @ParametersAreNonnullByDefault
             public boolean mayPickup(Player player1) {
@@ -813,17 +822,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         }
     }
 
-    public static class Sort {
-        public static final byte ID_ASCENDING = 0;
-        public static final byte ID_DESCENDING = 1;
-        public static final byte NAMESPACE_ID_ASCENDING = 2;
-        public static final byte NAMESPACE_ID_DESCENDING = 3;
-        public static final byte MIRROR_ID_ASCENDING = 4;
-        public static final byte MIRROR_ID_DESCENDING = 5;
-        public static final byte COUNT_ASCENDING = 6;
-        public static final byte COUNT_DESCENDING = 7;
-    }
-
     public void nextSort() {
         sortType += 2;
         if (sortType > 7) sortType %= 8;
@@ -834,12 +832,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (sortType % 2 == 0) sortType++;
         else sortType--;
         if (level.isClientSide) dummyContainer.refreshContainer(true);
-    }
-
-    public static class ViewType {
-        public static final byte ALL = 0;
-        public static final byte Items = 1;
-        public static final byte Fluids = 2;
     }
 
     public void changeViewType() {
@@ -855,260 +847,6 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         controlPanelBlock.setViewType(viewType);
     }
 
-    public class DummyContainer extends SimpleContainer {
-        protected ArrayList<String> sortedItems = new ArrayList<>();
-        protected ArrayList<String> sortedFluids = new ArrayList<>();
-        protected ArrayList<String> sortedEnergies = new ArrayList<>();
-        public final ArrayList<String[]> sortedObject = new ArrayList<>();
-        public final ArrayList<String[]> viewingObject = new ArrayList<>();
-        public final HashMap<Integer, FluidStack> fluidStacks = new HashMap<>();
-        public final ArrayList<String> formatCount = new ArrayList<>();
-
-        private double scrollTo = 0.0D;
-
-        public DummyContainer() {
-            super(99);
-        }
-
-        public void onChangeViewType() {
-            sortedObject.clear();
-            switch (viewType) {
-                case ViewType.ALL -> {
-                    sortedItems.forEach(s -> sortedObject.add(new String[]{"item", s}));
-                    sortedFluids.forEach(s -> sortedObject.add(new String[]{"fluid", s}));
-                    sortedEnergies.forEach(s -> sortedObject.add(new String[]{"energy", s}));
-                }
-                case ViewType.Items -> sortedItems.forEach(s -> sortedObject.add(new String[]{"item", s}));
-                case ViewType.Fluids -> {
-                    sortedFluids.forEach(s -> sortedObject.add(new String[]{"fluid", s}));
-                    sortedEnergies.forEach(s -> sortedObject.add(new String[]{"energy", s}));
-                }
-            }
-            scrollOffset(0);
-        }
-
-        public void onScrollTo(double scrollTo) {
-            this.scrollTo = scrollTo;
-            scrollOffset(0);
-        }
-
-        public double getScrollOn() {
-            return scrollTo;
-        }
-
-        public void scrollOffset(int offset) {
-            if (sortedObject.size() <= (craftingMode ? 77 : 99)) {
-                viewingObject.clear();
-                viewingObject.addAll(sortedObject);
-            } else {
-                int i = (int) Math.ceil(sortedObject.size() / 11.0D);
-                i -= craftingMode ? 7 : 9;
-                int j = Math.round(i * (float) scrollTo);
-                if (offset != 0) {
-                    j += offset;
-                    j = Math.max(0, Math.min(i, j));
-                    scrollTo = (double) j / (double) i;
-                }
-                viewingObject.clear();
-                viewingObject.addAll(sortedObject.subList(j * 11, Math.min(sortedObject.size(), j * 11 + (craftingMode ? 77 : 99))));
-            }
-            updateDummySlots();
-        }
-
-        public double onMouseScrolled(boolean isUp) {
-            if (isUp) scrollOffset(-1);
-            else scrollOffset(1);
-            return scrollTo;
-        }
-
-        public void refreshContainer(boolean fullUpdate) {
-            if (!level.isClientSide) return;
-            if ((fullUpdate || sortType >= 6) && !LShifting) {
-                sortedItems = new ArrayList<>(channel.storageItems.keySet());
-                sortedFluids = new ArrayList<>(channel.storageFluids.keySet());
-                sortedEnergies = new ArrayList<>(channel.storageEnergies.keySet());
-                if (!filter.equals("")) {
-                    ArrayList<String> temp = new ArrayList<>();
-                    ArrayList<String> temp1 = new ArrayList<>();
-                    ArrayList<String> temp2 = new ArrayList<>();
-                    char head = filter.charAt(0);
-                    if (head == '*') {
-                        String s = filter.substring(1);
-                        for (String itemName : sortedItems) if (itemName.contains(s)) temp.add(itemName);
-                        for (String fluidName : sortedFluids) if (fluidName.contains(s)) temp1.add(fluidName);
-                        for (String energyName : sortedEnergies) if (energyName.contains(s)) temp2.add(energyName);
-                    } else if (head == '$') {
-                        String s = filter.substring(1);
-                        for (String itemName : sortedItems) {
-                            ItemStack itemStack = new ItemStack(Tools.getItem(itemName));
-                            ArrayList<String> tags = new ArrayList<>();
-                            itemStack.getTags().forEach(itemTagKey -> tags.add(itemTagKey.location().getPath()));
-                            for (String tag : tags) {
-                                if (tag.contains(s)) {
-                                    temp.add(itemName);
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        for (String itemName : sortedItems) {
-                            if (itemName.contains(filter)) temp.add(itemName);
-                            else {
-                                ItemStack itemStack = new ItemStack(Tools.getItem(itemName));
-                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp.add(itemName);
-                            }
-                        }
-                        for (String fluidName : sortedFluids) {
-                            if (fluidName.contains(filter)) temp1.add(fluidName);
-                            else {
-                                FluidStack fluidStack = new FluidStack(Tools.getFluid(fluidName), 1);
-                                if (fluidStack.getDisplayName().getString().toLowerCase().contains(filter)) temp1.add(fluidName);
-                            }
-                        }
-                        for (String energyName : sortedEnergies) {
-                            if (energyName.contains(filter)) temp2.add(energyName);
-                            else {
-                                ItemStack itemStack = new ItemStack(Tools.getItem(energyName));
-                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp2.add(energyName);
-                            }
-                        }
-                    }
-                    sortedItems = temp;
-                    sortedFluids = temp1;
-                    sortedEnergies = temp2;
-                }
-                switch (sortType) {
-                    case Sort.ID_ASCENDING -> {
-                        sortedItems.sort(Tools::sortFromRightID);
-                        sortedFluids.sort(Tools::sortFromRightID);
-                        sortedEnergies.sort(Tools::sortFromRightID);
-                    }
-                    case Sort.ID_DESCENDING -> {
-                        sortedItems.sort(Collections.reverseOrder(Tools::sortFromRightID));
-                        sortedFluids.sort(Collections.reverseOrder(Tools::sortFromRightID));
-                        sortedEnergies.sort(Collections.reverseOrder(Tools::sortFromRightID));
-                    }
-                    case Sort.NAMESPACE_ID_ASCENDING -> {
-                        sortedItems.sort(String::compareTo);
-                        sortedFluids.sort(String::compareTo);
-                        sortedEnergies.sort(String::compareTo);
-                    }
-                    case Sort.NAMESPACE_ID_DESCENDING -> {
-                        sortedItems.sort(Collections.reverseOrder(String::compareTo));
-                        sortedFluids.sort(Collections.reverseOrder(String::compareTo));
-                        sortedEnergies.sort(Collections.reverseOrder(String::compareTo));
-                    }
-                    case Sort.MIRROR_ID_ASCENDING -> {
-                        sortedItems.sort(Tools::sortFromMirrorID);
-                        sortedFluids.sort(Tools::sortFromMirrorID);
-                        sortedEnergies.sort(Tools::sortFromMirrorID);
-                    }
-                    case Sort.MIRROR_ID_DESCENDING -> {
-                        sortedItems.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
-                        sortedFluids.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
-                        sortedEnergies.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
-                    }
-                    case Sort.COUNT_ASCENDING -> {
-                        sortedItems.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageItems, false));
-                        sortedFluids.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageFluids, false));
-                        sortedEnergies.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageEnergies, false));
-                    }
-                    case Sort.COUNT_DESCENDING -> {
-                        sortedItems.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageItems, true));
-                        sortedFluids.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageFluids, true));
-                        sortedEnergies.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageEnergies, true));
-                    }
-                }
-                onChangeViewType();
-                return;
-            }
-            updateDummySlots();
-        }
-
-        public void updateDummySlots() {
-            formatCount.clear();
-            fluidStacks.clear();
-            for (int j = 0; j < (craftingMode ? 77 : 99); j++) {
-                if (j < viewingObject.size() && viewingObject.get(j) != null) {
-                    String id = viewingObject.get(j)[1];
-                    if (viewingObject.get(j)[0].equals("fluid")) {
-                        Fluid fluid = Tools.getFluid(id);
-                        this.setItem(j, new ItemStack(fluid.getBucket()));
-                        fluidStacks.put(j, new FluidStack(Tools.getFluid(id), 1));
-                        if (!channel.storageFluids.containsKey(id)) {
-                            formatCount.add(j, "§c0");
-                            continue;
-                        }
-                        long count = channel.storageFluids.get(id);
-                        if (count < Long.MAX_VALUE) {
-                            String stringCount = Tools.DECIMAL_FORMAT.format(count);
-                            stringCount = stringCount.substring(0, 4);
-                            if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
-                            stringCount = stringCount.replace(",", ".");
-                            if (count < 1000L) stringCount += "mB";
-                            else if (count < 1000000L) stringCount += "";
-                            else if (count < 1000000000L) stringCount += "K";
-                            else if (count < 1000000000000L) stringCount += "M";
-                            else if (count < 1000000000000000L) stringCount += "G";
-                            else if (count < 1000000000000000000L) stringCount += "T";
-                            else stringCount += "P";
-                            formatCount.add(j, stringCount);
-                        } else formatCount.add(j, "MAX");
-                    } else {
-                        //叠堆数为1避开原版的数字渲染
-                        ItemStack itemStack = new ItemStack(Tools.getItem(id));
-                        this.setItem(j, itemStack);
-                        long count;
-                        if (viewingObject.get(j)[0].equals("item")) {
-                            if (channel.storageItems.containsKey(id)) {
-                                count = channel.storageItems.get(id);
-                            } else {
-                                formatCount.add(j, "§c0");
-                                continue;
-                            }
-                        } else {
-                            if (channel.storageEnergies.containsKey(id)) {
-                                count = channel.storageEnergies.get(id);
-                            } else {
-                                formatCount.add(j, "§c0");
-                                continue;
-                            }
-                        }
-                        if (count < 1000L) formatCount.add(j, String.valueOf(count));
-                        else if (count < Long.MAX_VALUE) {
-                            String stringCount = Tools.DECIMAL_FORMAT.format(count);
-                            stringCount = stringCount.substring(0, 4);
-                            if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
-                            stringCount = stringCount.replace(",", ".");
-                            if (count < 1000000L) stringCount += "K";
-                            else if (count < 1000000000L) stringCount += "M";
-                            else if (count < 1000000000000L) stringCount += "G";
-                            else if (count < 1000000000000000L) stringCount += "T";
-                            else if (count < 1000000000000000000L) stringCount += "P";
-                            else stringCount += "E";
-                            formatCount.add(j, stringCount);
-                            // 9,223,372,036,854,775,807L
-                            // e  p   t   g   m   k
-                        } else formatCount.add(j, "MAX");
-                    }
-                } else this.setItem(j, ItemStack.EMPTY);
-            }
-        }
-
-        @Override
-        public void setChanged() {
-        }
-
-        @Override
-        public int getMaxStackSize() {
-            return Integer.MAX_VALUE;
-        }
-
-    }
-
-
-    //覆写
-
     @Override
     @ParametersAreNonnullByDefault
     public void clicked(int pSlotId, int pButton, ClickType pClickType, Player pPlayer) {
@@ -1123,17 +861,20 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     switch (pClickType) {
                         case QUICK_MOVE -> {
                             //左键shift
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.LEFT_SHIFT_DUMMY_SLOT, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.LEFT_SHIFT_DUMMY_SLOT, object));
                             onLeftShiftDummySlot(object[0], object[1]);
                         }
                         case PICKUP -> {
                             //左键点击
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.LEFT_CLICK_DUMMY_SLOT, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.LEFT_CLICK_DUMMY_SLOT, object));
                             onLeftClickDummySlot(object[0], object[1]);
                         }
                         case THROW -> {
                             //丢一个
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.THROW_ONE, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.THROW_ONE, object));
                             tryThrowOneFromDummySlot(object[0], object[1]);
                         }
                     }
@@ -1142,22 +883,26 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     switch (pClickType) {
                         case PICKUP -> {
                             //右键点击
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.Right_CLICK_DUMMY_SLOT, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.Right_CLICK_DUMMY_SLOT, object));
                             onRightClickDummySlot(object[0], object[1]);
                         }
                         case QUICK_MOVE -> {
                             //右键shift 快速拿一个
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.Right_SHIFT_DUMMY_SLOT, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.Right_SHIFT_DUMMY_SLOT, object));
                             onRightShiftDummySlot(object[0], object[1]);
                         }
                         case QUICK_CRAFT -> {
                             //左键拖动
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.LEFT_DRAG, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.LEFT_DRAG, object));
                             onLeftDragDummySlot(object[0], object[1]);
                         }
                         case THROW -> {
                             //丢一组
-                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(), new ControlPanelMenuActionPack(containerId, Action.THROW_STICK, object));
+                            NetworkHandler.INSTANCE.send(PacketDistributor.SERVER.noArg(),
+                                                         new ControlPanelMenuActionPack(containerId, Action.THROW_STICK, object));
                             tryThrowStickFromDummySlot(object[0], object[1]);
                         }
                     }
@@ -1218,27 +963,32 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     if (!this.moveItemStackTo(movingStack, 41, 50, false)) {
                         return ItemStack.EMPTY;
                     }
-                } else {
+                }
+                else {
                     channel.addItem(movingStack);
                     return ItemStack.EMPTY;
                 }
-            } else if (slotId == 50) {
+            }
+            else if (slotId == 50) {
                 movingStack.getItem().onCraftedBy(movingStack, level, player);
                 if (!this.moveItemStackTo(movingStack, 0, 36, true)) {
                     return ItemStack.EMPTY;
                 }
                 slot.onQuickCraft(movingStack, itemStack);
-            } else if (slotId >= 41 && slotId <= 49) {
+            }
+            else if (slotId >= 41 && slotId <= 49) {
                 //正常情况不会运行这里，因为上面已经拦下来了。
                 if (!this.moveItemStackTo(movingStack, 0, 36, false)) {
                     return ItemStack.EMPTY;
                 }
-            } else {
+            }
+            else {
                 BlackHoleStorage.LOGGER.warn("Ohh! Who trigger the quickMoveStack() when slotId >= 51 in server side ?");
             }
             if (movingStack.isEmpty()) {
                 slot.set(ItemStack.EMPTY);
-            } else {
+            }
+            else {
                 slot.setChanged();
             }
             if (movingStack.getCount() == itemStack.getCount()) {
@@ -1266,13 +1016,17 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 CompoundTag nbt = panelItem.getTag();
                 nbt.remove("channel");
                 panelItem.setTag(nbt);
-            } else controlPanelBlock.setChannel(null, -1);
+            }
+            else controlPanelBlock.setChannel(null, -1);
             openChannelScreen();
         }
         if (panelItemSlotIndex >= 0) return panelItem == player.getInventory().getItem(panelItemSlotIndex);
         else return !controlPanelBlock.isRemoved() &&
                 player.distanceToSqr(blockPos.getX() + 0.5D, blockPos.getY() + 0.5D, blockPos.getZ() + 0.5D) <= 32.0D;
     }
+
+
+    //覆写
 
     @Override
     @ParametersAreNonnullByDefault
@@ -1293,7 +1047,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (channel.isRemoved()) nbt.remove("channel");
                 panelItem.setTag(nbt);
             }
-        } else {
+        }
+        else {
             if (!controlPanelBlock.isLocked()) saveBlock();
         }
     }
@@ -1302,12 +1057,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (locked) return;
         if (panelItemSlotIndex >= 0)
             NetworkHooks.openScreen((ServerPlayer) player,
-                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex)), buf -> {});
-        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock), buf -> {});
+                                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex)), buf -> {
+                    });
+        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock), buf -> {
+        });
     }
-
-
-    //合成相关
 
     @Override
     @ParametersAreNonnullByDefault
@@ -1324,7 +1078,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (resultSlots.setRecipeUsed(level, (ServerPlayer) player, recipe)) {
                 resultSlots.setItem(0, recipe.assemble(craftSlots));
             }
-        } else resultSlots.setItem(0, ItemStack.EMPTY);
+        }
+        else resultSlots.setItem(0, ItemStack.EMPTY);
     }
 
     public void receivedRecipe(String recipeId, boolean maxTransfer) {
@@ -1364,7 +1119,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 //不统计nbt
                 if (stack.hasTag()) {
                     hasNbtItem = true;
-                } else {
+                }
+                else {
                     //边统计边确认此槽可以使用的物品里数量最大的那一种
                     Item item = stack.getItem();
                     long count;
@@ -1388,7 +1144,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             }
             if (markItem == null && hasNbtItem) {
                 itemChosen.add(Items.AIR);
-            } else itemChosen.add(markItem);
+            }
+            else itemChosen.add(markItem);
         }
 
         //先填充一次，如果连填充单个都不够，那就不需要继续了。
@@ -1414,7 +1171,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                             if (stack2.getCount() == 1) {
                                 craftSlots.setItem(gridIndex, stack2);
                                 inventory.setItem(index, ItemStack.EMPTY);
-                            } else {
+                            }
+                            else {
                                 ItemStack newStack = stack2.copy();
                                 newStack.setCount(1);
                                 craftSlots.setItem(gridIndex, newStack);
@@ -1426,11 +1184,13 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     }
                     if (flag) break;
                 }
-            } else {
+            }
+            else {
                 if (channel.getRealItemAmount(Tools.getItemId(item)) > 0) {
                     craftSlots.setItem(gridIndex, new ItemStack(item));
                     channel.removeItem(Tools.getItemId(item), 1);
-                } else {
+                }
+                else {
                     if (invItemCounter == null) invItemCounter = new InvItemCounter(inventory);
                     Integer[] itemIndex = invItemCounter.getNoNbtItemIndex();
                     for (Integer index : itemIndex) {
@@ -1440,7 +1200,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                             if (stack.getCount() == 1) {
                                 craftSlots.setItem(gridIndex, stack);
                                 inventory.setItem(index, ItemStack.EMPTY);
-                            } else {
+                            }
+                            else {
                                 craftSlots.setItem(gridIndex, new ItemStack(item));
                                 stack.grow(-1);
                             }
@@ -1466,7 +1227,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                 if (channelHas >= targetCount) {
                     channel.removeItem(itemId, targetCount - itemStack.getCount());
                     itemStack.setCount(targetCount);
-                } else {
+                }
+                else {
                     if (channelHas > 0) {
                         channel.removeItem(itemId, channelHas);
                         itemStack.setCount(itemStack.getCount() + channelHas);
@@ -1482,7 +1244,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                                 int j = itemStack.getCount() + invCount - targetCount;
                                 invStack.setCount(j);
                                 itemStack.setCount(targetCount);
-                            } else {
+                            }
+                            else {
                                 inventory.setItem(index, ItemStack.EMPTY);
                                 itemStack.grow(invCount);
                                 if (itemStack.getCount() >= targetCount) break;
@@ -1505,7 +1268,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     }
                 }
             }
-        } else resultSlots.setItem(0, ItemStack.EMPTY);
+        }
+        else resultSlots.setItem(0, ItemStack.EMPTY);
     }
 
     public void receivedRecipe(Map<String, Integer> itemNeed) {
@@ -1533,6 +1297,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             }
         }
     }
+
+
+    //合成相关
 
     private void craftToInventory(int max) {
         ItemStack resultItem = resultSlots.getItem(0).copy();
@@ -1578,8 +1345,9 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     /**
      * 进行合成，此处未产出产物。
+     *
      * @param resultItem 产物
-     * @param maxTry 最大合成次数
+     * @param maxTry     最大合成次数
      * @return 成功合成的次数
      */
     private int doCraft(ItemStack resultItem, int maxTry) {
@@ -1605,7 +1373,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                                 if (channelAmount >= maxStackSize - 1) {
                                     craftingStack.setCount(maxStackSize);
                                     channel.removeItem(Tools.getItemId(craftingStack.getItem()), maxStackSize - 1);
-                                } else {
+                                }
+                                else {
                                     if (channelAmount > 0) {
                                         channel.removeItem(Tools.getItemId(craftingStack.getItem()), channelAmount);
                                         craftingStack.setCount(channelAmount + 1);
@@ -1634,6 +1403,7 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     /**
      * 进行快速合成，此处会扣掉频道材料，但未产出合成物。
+     *
      * @param maxTry 最大合成次数
      * @return 已经合成的次数
      */
@@ -1676,7 +1446,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     /**
      * 修复并补充物品到合成格，若返回失败应该中断合成。
-     * @param resultItem 期望结果
+     *
+     * @param resultItem  期望结果
      * @param beforeItems 期望合成格
      * @return 是否成功
      */
@@ -1698,9 +1469,11 @@ public class ControlPanelMenu extends AbstractContainerMenu {
                     int channelHas = channel.getItemAmount(Tools.getItemId(needStack.getItem()));
                     if (channelHas >= needStack.getMaxStackSize()) {
                         craftSlots.setItem(i, channel.takeItem(Tools.getItemId(needStack.getItem()), needStack.getMaxStackSize()));
-                    } else if (channelHas == 0) {
+                    }
+                    else if (channelHas == 0) {
                         moveSameItemToCraftingSlot(i, needStack);
-                    } else {
+                    }
+                    else {
                         craftSlots.setItem(i, channel.takeItem(Tools.getItemId(needStack.getItem()), channelHas));
                         fillStackFromInventory(craftSlots.getItem(i));
                     }
@@ -1824,7 +1597,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (otherStack.getCount() > needAmount) {
                 itemStack.setCount(itemStack.getMaxStackSize());
                 otherStack.setCount(otherStack.getCount() - needAmount);
-            } else {
+            }
+            else {
                 itemStack.setCount(itemStack.getCount() + otherStack.getCount());
                 player.getInventory().setItem(slotId, ItemStack.EMPTY);
             }
@@ -1838,7 +1612,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
             if (otherStack.getCount() > needAmount) {
                 itemStack.setCount(itemStack.getMaxStackSize());
                 otherStack.setCount(otherStack.getCount() - needAmount);
-            } else {
+            }
+            else {
                 itemStack.setCount(itemStack.getCount() + otherStack.getCount());
                 player.getInventory().setItem(slotId, ItemStack.EMPTY);
             }
@@ -1869,6 +1644,296 @@ public class ControlPanelMenu extends AbstractContainerMenu {
 
     private boolean isSameResul(ItemStack itemStack) {
         return ItemStack.isSameItemSameTags(resultSlots.getItem(0), itemStack) && resultSlots.getItem(0).getCount() == itemStack.getCount();
+    }
+
+    private static final class Action {
+        public static final int LEFT_CLICK_DUMMY_SLOT = 0;
+        public static final int Right_CLICK_DUMMY_SLOT = 1;
+        public static final int LEFT_SHIFT_DUMMY_SLOT = 2;
+        public static final int Right_SHIFT_DUMMY_SLOT = 3;
+        public static final int THROW_ONE = 4;
+        public static final int THROW_STICK = 5;
+        public static final int LEFT_DRAG = 6;
+        public static final int RIGHT_DRAG = 7;
+        public static final int CLONE = 8;
+        public static final int DRAG_CLONE = 9;
+    }
+
+    public static class Sort {
+        public static final byte ID_ASCENDING = 0;
+        public static final byte ID_DESCENDING = 1;
+        public static final byte NAMESPACE_ID_ASCENDING = 2;
+        public static final byte NAMESPACE_ID_DESCENDING = 3;
+        public static final byte MIRROR_ID_ASCENDING = 4;
+        public static final byte MIRROR_ID_DESCENDING = 5;
+        public static final byte COUNT_ASCENDING = 6;
+        public static final byte COUNT_DESCENDING = 7;
+    }
+
+    public static class ViewType {
+        public static final byte ALL = 0;
+        public static final byte Items = 1;
+        public static final byte Fluids = 2;
+    }
+
+    public class DummyContainer extends SimpleContainer {
+        public final ArrayList<String[]> sortedObject = new ArrayList<>();
+        public final ArrayList<String[]> viewingObject = new ArrayList<>();
+        public final HashMap<Integer, FluidStack> fluidStacks = new HashMap<>();
+        public final ArrayList<String> formatCount = new ArrayList<>();
+        protected ArrayList<String> sortedItems = new ArrayList<>();
+        protected ArrayList<String> sortedFluids = new ArrayList<>();
+        protected ArrayList<String> sortedEnergies = new ArrayList<>();
+        private double scrollTo = 0.0D;
+
+        public DummyContainer() {
+            super(99);
+        }
+
+        public void onChangeViewType() {
+            sortedObject.clear();
+            switch (viewType) {
+                case ViewType.ALL -> {
+                    sortedItems.forEach(s -> sortedObject.add(new String[]{"item", s}));
+                    sortedFluids.forEach(s -> sortedObject.add(new String[]{"fluid", s}));
+                    sortedEnergies.forEach(s -> sortedObject.add(new String[]{"energy", s}));
+                }
+                case ViewType.Items -> sortedItems.forEach(s -> sortedObject.add(new String[]{"item", s}));
+                case ViewType.Fluids -> {
+                    sortedFluids.forEach(s -> sortedObject.add(new String[]{"fluid", s}));
+                    sortedEnergies.forEach(s -> sortedObject.add(new String[]{"energy", s}));
+                }
+            }
+            scrollOffset(0);
+        }
+
+        public void onScrollTo(double scrollTo) {
+            this.scrollTo = scrollTo;
+            scrollOffset(0);
+        }
+
+        public double getScrollOn() {
+            return scrollTo;
+        }
+
+        public void scrollOffset(int offset) {
+            if (sortedObject.size() <= (craftingMode ? 77 : 99)) {
+                viewingObject.clear();
+                viewingObject.addAll(sortedObject);
+            }
+            else {
+                int i = (int) Math.ceil(sortedObject.size() / 11.0D);
+                i -= craftingMode ? 7 : 9;
+                int j = Math.round(i * (float) scrollTo);
+                if (offset != 0) {
+                    j += offset;
+                    j = Math.max(0, Math.min(i, j));
+                    scrollTo = (double) j / (double) i;
+                }
+                viewingObject.clear();
+                viewingObject.addAll(sortedObject.subList(j * 11, Math.min(sortedObject.size(), j * 11 + (craftingMode ? 77 : 99))));
+            }
+            updateDummySlots(true);
+        }
+
+        public double onMouseScrolled(boolean isUp) {
+            if (isUp) scrollOffset(-1);
+            else scrollOffset(1);
+            return scrollTo;
+        }
+
+        public void refreshContainer(boolean fullUpdate) {
+            if (!level.isClientSide) return;
+            if ((fullUpdate || sortType >= 6) && !LShifting) {
+                sortedItems = new ArrayList<>(channel.storageItems.keySet());
+                sortedFluids = new ArrayList<>(channel.storageFluids.keySet());
+                sortedEnergies = new ArrayList<>(channel.storageEnergies.keySet());
+                if (!filter.equals("")) {
+                    ArrayList<String> temp = new ArrayList<>();
+                    ArrayList<String> temp1 = new ArrayList<>();
+                    ArrayList<String> temp2 = new ArrayList<>();
+                    char head = filter.charAt(0);
+                    if (head == '*') {
+                        String s = filter.substring(1);
+                        for (String itemName : sortedItems) if (itemName.contains(s)) temp.add(itemName);
+                        for (String fluidName : sortedFluids) if (fluidName.contains(s)) temp1.add(fluidName);
+                        for (String energyName : sortedEnergies) if (energyName.contains(s)) temp2.add(energyName);
+                    }
+                    else if (head == '$') {
+                        String s = filter.substring(1);
+                        for (String itemName : sortedItems) {
+                            ItemStack itemStack = new ItemStack(Tools.getItem(itemName));
+                            ArrayList<String> tags = new ArrayList<>();
+                            itemStack.getTags().forEach(itemTagKey -> tags.add(itemTagKey.location().getPath()));
+                            for (String tag : tags) {
+                                if (tag.contains(s)) {
+                                    temp.add(itemName);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        for (String itemName : sortedItems) {
+                            if (itemName.contains(filter)) temp.add(itemName);
+                            else {
+                                ItemStack itemStack = new ItemStack(Tools.getItem(itemName));
+                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp.add(itemName);
+                            }
+                        }
+                        for (String fluidName : sortedFluids) {
+                            if (fluidName.contains(filter)) temp1.add(fluidName);
+                            else {
+                                FluidStack fluidStack = new FluidStack(Tools.getFluid(fluidName), 1);
+                                if (fluidStack.getDisplayName().getString().toLowerCase().contains(filter)) temp1.add(fluidName);
+                            }
+                        }
+                        for (String energyName : sortedEnergies) {
+                            if (energyName.contains(filter)) temp2.add(energyName);
+                            else {
+                                ItemStack itemStack = new ItemStack(Tools.getItem(energyName));
+                                if (itemStack.getDisplayName().getString().toLowerCase().contains(filter)) temp2.add(energyName);
+                            }
+                        }
+                    }
+                    sortedItems = temp;
+                    sortedFluids = temp1;
+                    sortedEnergies = temp2;
+                }
+                switch (sortType) {
+                    case Sort.ID_ASCENDING -> {
+                        sortedItems.sort(Tools::sortFromRightID);
+                        sortedFluids.sort(Tools::sortFromRightID);
+                        sortedEnergies.sort(Tools::sortFromRightID);
+                    }
+                    case Sort.ID_DESCENDING -> {
+                        sortedItems.sort(Collections.reverseOrder(Tools::sortFromRightID));
+                        sortedFluids.sort(Collections.reverseOrder(Tools::sortFromRightID));
+                        sortedEnergies.sort(Collections.reverseOrder(Tools::sortFromRightID));
+                    }
+                    case Sort.NAMESPACE_ID_ASCENDING -> {
+                        sortedItems.sort(String::compareTo);
+                        sortedFluids.sort(String::compareTo);
+                        sortedEnergies.sort(String::compareTo);
+                    }
+                    case Sort.NAMESPACE_ID_DESCENDING -> {
+                        sortedItems.sort(Collections.reverseOrder(String::compareTo));
+                        sortedFluids.sort(Collections.reverseOrder(String::compareTo));
+                        sortedEnergies.sort(Collections.reverseOrder(String::compareTo));
+                    }
+                    case Sort.MIRROR_ID_ASCENDING -> {
+                        sortedItems.sort(Tools::sortFromMirrorID);
+                        sortedFluids.sort(Tools::sortFromMirrorID);
+                        sortedEnergies.sort(Tools::sortFromMirrorID);
+                    }
+                    case Sort.MIRROR_ID_DESCENDING -> {
+                        sortedItems.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
+                        sortedFluids.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
+                        sortedEnergies.sort(Collections.reverseOrder(Tools::sortFromMirrorID));
+                    }
+                    case Sort.COUNT_ASCENDING -> {
+                        sortedItems.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageItems, false));
+                        sortedFluids.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageFluids, false));
+                        sortedEnergies.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageEnergies, false));
+                    }
+                    case Sort.COUNT_DESCENDING -> {
+                        sortedItems.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageItems, true));
+                        sortedFluids.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageFluids, true));
+                        sortedEnergies.sort((s1, s2) -> Tools.sortFromCount(s1, s2, channel.storageEnergies, true));
+                    }
+                }
+                onChangeViewType();
+                return;
+            }
+            updateDummySlots(fullUpdate);
+        }
+
+        public void updateDummySlots(boolean fullUpdate) {
+            formatCount.clear();
+            if (fullUpdate) fluidStacks.clear();
+            for (int j = 0; j < (craftingMode ? 77 : 99); j++) {
+                if (j < viewingObject.size() && viewingObject.get(j) != null) {
+                    String id = viewingObject.get(j)[1];
+                    if (viewingObject.get(j)[0].equals("fluid")) {
+                        if (fullUpdate) {
+                            this.setItem(j, new ItemStack(Tools.getFluid(id).getBucket()));
+                            fluidStacks.put(j, new FluidStack(Tools.getFluid(id), 1));
+                        }
+                        if (!channel.storageFluids.containsKey(id)) {
+                            formatCount.add(j, "§c0");
+                            continue;
+                        }
+                        long count = channel.storageFluids.get(id);
+                        if (count < 1000L) formatCount.add(j, count + "mB");
+                        else if (count < Long.MAX_VALUE) {
+                            String stringCount = Tools.DECIMAL_FORMAT.format(count);
+                            stringCount = stringCount.substring(0, 4);
+                            if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
+                            stringCount = stringCount.replace(",", ".");
+                            if (count < 1000000L) stringCount += "";
+                            else if (count < 1000000000L) stringCount += "K";
+                            else if (count < 1000000000000L) stringCount += "M";
+                            else if (count < 1000000000000000L) stringCount += "G";
+                            else if (count < 1000000000000000000L) stringCount += "T";
+                            else stringCount += "P";
+                            formatCount.add(j, stringCount);
+                        }
+                        else formatCount.add(j, "MAX");
+                    }
+                    else {
+                        //叠堆数为1避开原版的数字渲染
+                        if (fullUpdate) this.setItem(j, new ItemStack(Tools.getItem(id)));
+                        long count;
+                        if (viewingObject.get(j)[0].equals("item")) {
+                            if (channel.storageItems.containsKey(id)) {
+                                count = channel.storageItems.get(id);
+                            }
+                            else {
+                                formatCount.add(j, "§c0");
+                                continue;
+                            }
+                        }
+                        else {
+                            if (channel.storageEnergies.containsKey(id)) {
+                                count = channel.storageEnergies.get(id);
+                            }
+                            else {
+                                formatCount.add(j, "§c0");
+                                continue;
+                            }
+                        }
+                        if (count < 1000L) formatCount.add(j, String.valueOf(count));
+                        else if (count < Long.MAX_VALUE) {
+                            String stringCount = Tools.DECIMAL_FORMAT.format(count);
+                            stringCount = stringCount.substring(0, 4);
+                            if (stringCount.endsWith(",")) stringCount = stringCount.substring(0, 3);
+                            stringCount = stringCount.replace(",", ".");
+                            if (count < 1000000L) stringCount += "K";
+                            else if (count < 1000000000L) stringCount += "M";
+                            else if (count < 1000000000000L) stringCount += "G";
+                            else if (count < 1000000000000000L) stringCount += "T";
+                            else if (count < 1000000000000000000L) stringCount += "P";
+                            else stringCount += "E";
+                            formatCount.add(j, stringCount);
+                            // 9,223,372,036,854,775,807L
+                            // e  p   t   g   m   k
+                        }
+                        else formatCount.add(j, "MAX");
+                    }
+                }
+                else this.setItem(j, ItemStack.EMPTY);
+            }
+        }
+
+        @Override
+        public void setChanged() {
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return Integer.MAX_VALUE;
+        }
+
     }
 
 }
