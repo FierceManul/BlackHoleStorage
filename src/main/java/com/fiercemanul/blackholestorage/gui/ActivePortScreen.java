@@ -627,6 +627,7 @@ public class ActivePortScreen extends BaseScreen<ActivePortMenu> {
         public void draggedTo(double scrolledOn) {
             if (menu.getSelectedRules().size() < 5) menu.scrollAt = 0;
             else menu.scrollAt = Math.round((float) (scrolledOn * (menu.getSelectedRules().size() - 4)));
+            menu.dummyContainer.updateItem();
         }
 
         @Override

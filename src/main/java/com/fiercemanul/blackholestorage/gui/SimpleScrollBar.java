@@ -55,6 +55,7 @@ public abstract class SimpleScrollBar extends AbstractWidget {
 
     public void setScrolledOn(double scrolledOn) {
         this.scrolledOn = Math.max(0.0D, Math.min(1.0D, scrolledOn));
+        this.draggedTo(this.scrolledOn);
     }
 
     public void setScrollTagSize(double scrollTagSize) {
