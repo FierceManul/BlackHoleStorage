@@ -1060,11 +1060,8 @@ public class ControlPanelMenu extends AbstractContainerMenu {
         if (locked) return;
         if (panelItemSlotIndex >= 0)
             NetworkHooks.openScreen((ServerPlayer) player,
-                                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex),
-                                                                  ContainerLevelAccess.NULL), buf -> {
-                    });
-        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock, access), buf -> {
-        });
+                    new ChannelSelectMenuProvider(new ItemChannelTerminal(player.getInventory(), panelItem, panelItemSlotIndex), ContainerLevelAccess.NULL), buf -> {});
+        else NetworkHooks.openScreen((ServerPlayer) player, new ChannelSelectMenuProvider(controlPanelBlock, access), buf -> {});
     }
 
     @Override
