@@ -115,39 +115,39 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
     @ParametersAreNonnullByDefault
     protected void renderBg(PoseStack stack, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, GUI_IMG);
-        this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 6);
+        blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 6);
         if (this.menu.craftingMode) {
-            this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 56);
-            this.blit(stack, this.leftPos, this.topPos + 56, 0, 22, imageWidth, 34);
-            this.blit(stack, this.leftPos, this.topPos + 90, 0, 22, imageWidth, 159);
+            blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 56);
+            blit(stack, this.leftPos, this.topPos + 56, 0, 22, imageWidth, 34);
+            blit(stack, this.leftPos, this.topPos + 90, 0, 22, imageWidth, 159);
 
             Slot helmetSlot = this.menu.slots.get(36);
             if (helmetSlot.isActive() && helmetSlot.getItem().isEmpty()) {
-                this.blit(stack, this.leftPos + helmetSlot.x, this.topPos + helmetSlot.y, 0, 199, 16, 16);
+                blit(stack, this.leftPos + helmetSlot.x, this.topPos + helmetSlot.y, 0, 199, 16, 16);
             }
             Slot chestplateSlot = this.menu.slots.get(37);
             if (chestplateSlot.isActive() && chestplateSlot.getItem().isEmpty()) {
-                this.blit(stack, this.leftPos + chestplateSlot.x, this.topPos + chestplateSlot.y, 16, 199, 16, 16);
+                blit(stack, this.leftPos + chestplateSlot.x, this.topPos + chestplateSlot.y, 16, 199, 16, 16);
             }
             Slot leggingsSlot = this.menu.slots.get(38);
             if (leggingsSlot.isActive() && leggingsSlot.getItem().isEmpty()) {
-                this.blit(stack, this.leftPos + leggingsSlot.x, this.topPos + leggingsSlot.y, 32, 199, 16, 16);
+                blit(stack, this.leftPos + leggingsSlot.x, this.topPos + leggingsSlot.y, 32, 199, 16, 16);
             }
             Slot bootsSlot = this.menu.slots.get(39);
             if (bootsSlot.isActive() && bootsSlot.getItem().isEmpty()) {
-                this.blit(stack, this.leftPos + bootsSlot.x, this.topPos + bootsSlot.y, 48, 199, 16, 16);
+                blit(stack, this.leftPos + bootsSlot.x, this.topPos + bootsSlot.y, 48, 199, 16, 16);
             }
             Slot lhandSlot = this.menu.slots.get(40);
             if (lhandSlot.isActive() && lhandSlot.getItem().isEmpty()) {
-                this.blit(stack, this.leftPos + lhandSlot.x, this.topPos + lhandSlot.y, 64, 199, 16, 16);
+                blit(stack, this.leftPos + lhandSlot.x, this.topPos + lhandSlot.y, 64, 199, 16, 16);
             }
 
         } else {
-            this.blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 57);
-            this.blit(stack, this.leftPos, this.topPos + 57, 0, 6, imageWidth, 51);
-            this.blit(stack, this.leftPos, this.topPos + 108, 0, 6, imageWidth, 50);
-            this.blit(stack, this.leftPos, this.topPos + 158, 0, 181, imageWidth, 17);
-            this.blit(stack, this.leftPos, this.topPos + 175, 0, 107, imageWidth, 74);
+            blit(stack, this.leftPos, this.topPos, 0, 0, imageWidth, 57);
+            blit(stack, this.leftPos, this.topPos + 57, 0, 6, imageWidth, 51);
+            blit(stack, this.leftPos, this.topPos + 108, 0, 6, imageWidth, 50);
+            blit(stack, this.leftPos, this.topPos + 158, 0, 181, imageWidth, 17);
+            blit(stack, this.leftPos, this.topPos + 175, 0, 107, imageWidth, 74);
         }
     }
 
@@ -168,7 +168,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.enableDepthTest();
             float fontSize = 0.5F;
             poseStack.pushPose();
-            poseStack.translate(leftPos + slot.x, topPos + slot.y, 400.0D);
+            poseStack.translate(leftPos + slot.x, topPos + slot.y, 300.0D);
             poseStack.scale(fontSize, fontSize, 1.0F);
             this.font.draw(poseStack, count,
                     (16 - this.font.width(count) * fontSize) / fontSize,
@@ -494,7 +494,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             int uOffset = menu.craftingMode ? 96 : 80;
-            int vOffset = this.isHoveredOrFocused() ? 207 : 199;
+            int vOffset = this.isHovered ? 207 : 199;
             blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
     }
@@ -519,7 +519,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             float uOffset = menu.locked ? 86.0F : 67.0F;
-            float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
+            float vOffset = this.isHovered ? 231.0F : 215.0F;
             blit(pPoseStack, this.getX(), this.getY(), uOffset, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
@@ -544,7 +544,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
-            int uOffset = this.isHoveredOrFocused() ? 221 : 202;
+            int uOffset = this.isHovered ? 221 : 202;
             int vOffset = menu.sortType * 16;
             blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
@@ -575,7 +575,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
             int uOffset = 105 + 19 * menu.viewType;
-            int vOffset = this.isHoveredOrFocused() ? 231 : 215;
+            int vOffset = this.isHovered ? 231 : 215;
             blit(pPoseStack, this.getX(), this.getY(), (float) uOffset, (float) vOffset, this.width, this.height, 256, 256);
         }
     }
@@ -606,7 +606,7 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, GUI_IMG);
             RenderSystem.enableDepthTest();
-            float vOffset = this.isHoveredOrFocused() ? 231.0F : 215.0F;
+            float vOffset = this.isHovered ? 231.0F : 215.0F;
             blit(pPoseStack, this.getX(), this.getY(), 48.0F, vOffset, this.width, this.height, 256, 256);
             if (this.isHovered) this.renderToolTip(pPoseStack, pMouseX, pMouseY);
         }
@@ -629,6 +629,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
+        @Override
+        public void setFocused(boolean pFocused) {
+            super.setFocused(false);
+        }
+
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);
@@ -647,6 +652,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
         }
 
+        @Override
+        public void setFocused(boolean pFocused) {
+            super.setFocused(false);
+        }
+
         @ParametersAreNonnullByDefault
         public void renderToolTip(PoseStack pPoseStack, int pMouseX, int pMouseY) {
             renderTooltip(pPoseStack, list, pMouseX, pMouseY);
@@ -663,6 +673,11 @@ public class ControlPanelScreen extends BaseScreen<ControlPanelMenu> {
             list.add(Component.translatable("bhs.GUI.craft.tip2").getVisualOrderText());
             list.add(Component.translatable("bhs.GUI.craft.tip3").getVisualOrderText());
             list.add(Component.translatable("bhs.GUI.craft.tip4").getVisualOrderText());
+        }
+
+        @Override
+        public void setFocused(boolean pFocused) {
+            super.setFocused(false);
         }
 
         @ParametersAreNonnullByDefault

@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -69,7 +68,7 @@ public class PassivePortScreen extends BaseScreen<PassivePortMenu> {
     @ParametersAreNonnullByDefault
     protected void renderBg(PoseStack poseStack, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShaderTexture(0, GUI_IMG);
-        this.blit(poseStack, this.leftPos, this.topPos, 0, 0, imageWidth, imageHeight);
+        blit(poseStack, this.leftPos, this.topPos, 0, 0, imageWidth, imageHeight);
     }
 
     private void renderBigBlock() {

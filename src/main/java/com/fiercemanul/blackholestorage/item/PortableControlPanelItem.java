@@ -21,9 +21,11 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.UUID;
 
+@ParametersAreNonnullByDefault
 public class PortableControlPanelItem extends Item {
     public PortableControlPanelItem(Properties properties) {
         super(properties.stacksTo(1).fireResistant().rarity(Rarity.EPIC));
