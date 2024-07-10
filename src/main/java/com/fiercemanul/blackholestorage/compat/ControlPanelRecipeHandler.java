@@ -48,6 +48,11 @@ public class ControlPanelRecipeHandler<R> implements IRecipeTransferHandler<Cont
     }
 
     @Override
+    public @NotNull Class<R> getRecipeClass() {
+        return (Class<R>) CraftingRecipe.class;
+    }
+
+    @Override
     public @NotNull Optional<MenuType<ControlPanelMenu>> getMenuType() {
         return Optional.of(BlackHoleStorage.CONTROL_PANEL_MENU.get());
     }
