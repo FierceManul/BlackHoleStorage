@@ -169,6 +169,9 @@ public class ChannelSelectScreen extends BaseScreen<ChannelSelectMenu> {
 
     @Override
     public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
+        if (nameBox.isFocused() || searchBox.isFocused()) {
+            if (pKeyCode >= InputConstants.KEY_0 && pKeyCode <= InputConstants.KEY_Z) return true;
+        }
         if (pKeyCode == InputConstants.KEY_LSHIFT) lShifting = true;
         return super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
